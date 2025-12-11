@@ -13,6 +13,7 @@ simulation/config.status
 simulation/temp*.txt
 simulation/output.txt
 simulation/mix/mix.tr
+simulation/mix/fct.txt
 
 # Python bytecode
 __pycache__/
@@ -22,6 +23,9 @@ __pycache__/
 *.log
 *.tmp
 simulation/build/.wafpickle-*
+AICC_lty/temp_py.txt
+AICC_lty/__pycache__/
+AICC_lty/models/
 simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Build.pyc
 simulation/.lock-waf_linux2_build
 simulation/utils.pyc
