@@ -17,11 +17,11 @@ class NS3Env(gym.Env):
     def __init__(self, min_action=1.0, max_action=100.0, action_dim=1, max_steps=1000):
         super().__init__()
         
-        # 1. 定义状态空间：rtt纳秒 cnp标记位
+        # 1. 定义状态空间：rtt纳秒、cnp标记位、timestamp_ns（由共享内存提供）
         self.observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
-            shape=(2,),  # 目前只有rtt和cnp两个值，所以写死为2，后续扩展states的话需要修改
+            shape=(3,),  # rtt, cnp, timestamp_ns
             dtype=np.float32
         )
         
@@ -75,13 +75,14 @@ class NS3Env(gym.Env):
 
         if data is None:
             # 如果读取失败（共享内存可能还未创建或被销毁），返回零值
-            return np.array([0.0, 0.0], dtype=np.float32)
+            return np.array([0.0, 0.0, 0.0], dtype=np.float32)
         
-        # 提取RTT和CNP
+        # 提取RTT、CNP以及timestamp（纳秒）
         rtt_ns = float(data.rtt_ns)  # 纳秒
         cnp = float(data.cnp)
+        timestamp_ns = float(getattr(data, "timestamp_ns", 0.0))
         
-        observation = np.array([rtt_ns, cnp], dtype=np.float32)
+        observation = np.array([rtt_ns, cnp, timestamp_ns], dtype=np.float32)
         return observation
     
     def _update_action(self, action): # 将发送速率写回ns3，变量是float类型，单位为Gbps
@@ -130,14 +131,18 @@ class NS3Env(gym.Env):
             # 如果写入失败，不中断程序，只打印错误
             print(f"写入动作共享内存时出错: {e}")
     
-    def _calculate_reward(self, state): #计算reward TODO: 根据实际需求调整奖励函数
+    def _calculate_reward(self, state, next_state): #计算reward TODO: 根据实际需求调整奖励函数
 
-        rtt_ns = state[0]
+        # rtt_ns = state[0]
         cnp = state[1] 
-        rtt_penalty = -rtt_ns * 1e-7  # 1e-7 = 0.1 / 1000000，保持与毫秒版本相同的比例
-        cnp_penalty = -cnp * 1.0  # CNP=1时惩罚-1.0，CNP=0时无惩罚
+        # rtt_penalty = -rtt_ns * 1e-7  # 1e-7 = 0.1 / 1000000，保持与毫秒版本相同的比例
+        # cnp_penalty = -cnp * 1.0  # CNP=1时惩罚-1.0，CNP=0时无惩罚
         
-        reward = rtt_penalty + cnp_penalty
+        # reward = rtt_penalty + cnp_penalty
+        next_rtt = next_state[0]
+        pre_rtt = state[0]
+        diff = (next_rtt-pre_rtt)/(next_state[2]-state[2])
+        reward = -diff*0.1 -cnp*1.0
         
         return reward
     

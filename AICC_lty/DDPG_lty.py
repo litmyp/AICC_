@@ -116,13 +116,30 @@ class DDPGAgent:
         self.replay_buffer = ReplayBuffer(buffer_size)
         # 每次训练的批量大小
         self.batch_size = batch_size
+        # 状态缩放系数，缓解各维数值量级差异（rtt~1e4ns, cnp~1, timestamp~1e9ns）
+        self.state_scale = np.ones(state_dim, dtype=np.float32)
+        if state_dim >= 1:
+            self.state_scale[0] = 1e4  # rtt: 几千~几万 ns 量级 -> 缩到 ~1
+        if state_dim >= 2:
+            self.state_scale[1] = 1.0  # cnp: 0/1 保持不变
+        if state_dim >= 3:
+            self.state_scale[2] = 1e9  # timestamp: ns -> 秒量级
+
+    def _normalize_state(self, state):
+        """
+        对状态各维做缩放，推理与训练共用。
+        输入可为单条或批量（numpy 数组）。
+        """
+        state_np = np.array(state, dtype=np.float32)
+        return state_np / self.state_scale
  
     # 选择动作的方法
     def select_action(self, state, noise_std=0.0):
-        # 将状态转换为张量
-        state = torch.FloatTensor(state.reshape(1, -1))
+        # 归一化状态后送入策略（使用全部维度）
+        norm_state = self._normalize_state(state).reshape(1, -1)
+        state_tensor = torch.FloatTensor(norm_state)
         # 使用actor网络预测动作，并将结果转换为NumPy数组
-        action = self.actor(state).detach().cpu().numpy().flatten()
+        action = self.actor(state_tensor).detach().cpu().numpy().flatten()
         if noise_std > 0.0:
             noise = np.random.normal(0, noise_std, size=action.shape)
             action = action + noise
@@ -144,11 +161,15 @@ class DDPGAgent:
         # 从回放池中采样一批数据
         states, actions, rewards, next_states, dones = self.replay_buffer.sample(self.batch_size)
  
+        # 归一化状态，保持与推理一致
+        norm_states = self._normalize_state(states)
+        norm_next_states = self._normalize_state(next_states)
+
         # 将采样的数据转换为张量
-        states = torch.FloatTensor(states)
+        states = torch.FloatTensor(norm_states)
         actions = torch.FloatTensor(actions)
         rewards = torch.FloatTensor(rewards).unsqueeze(1)  # 添加一个维度以匹配Q值维度
-        next_states = torch.FloatTensor(next_states)
+        next_states = torch.FloatTensor(norm_next_states)
         dones = torch.FloatTensor(dones).unsqueeze(1)  # 添加一个维度以匹配Q值维度
  
         # 计算critic的损失
@@ -412,7 +433,7 @@ def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=
                 pending_entry = pending_transitions.pop(next_node_id, None)
                 if pending_entry is not None:
                     # 在拼接完整 transition 时重新计算奖励
-                    computed_reward = env._calculate_reward(next_state)
+                    computed_reward = env._calculate_reward(pending_entry["state"], next_state)
                     agent.add_to_replay_buffer(
                         pending_entry["state"],
                         pending_entry["action"],
@@ -529,7 +550,7 @@ if __name__ == "__main__":
     # 每隔多少个episode保存一次模型（设置为0表示只在训练结束时保存）
     save_frequency = 5
     # 训练时的批量大小 flow_num*4
-    batch_size = 64
+    batch_size = 16
     # 每隔多少步训练一次（1表示每步都训练，2表示每2步训练一次，以此类推）
     train_frequency = 10
     

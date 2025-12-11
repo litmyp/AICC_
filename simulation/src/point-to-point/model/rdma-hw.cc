@@ -1238,6 +1238,8 @@ void RdmaHw::HandleAckMySelf(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader 
 				std::this_thread::sleep_for(std::chrono::milliseconds(1)); // lty: 1ms 间隔轮询
 			}
 
+			// 先打印旧速率
+			std::cout<<"旧速率为:"<<qp->m_rate.GetBitRate()*1e-9 <<"Gb"<<std::endl;
 			// lty: 读取并打印速率信息，同时将速率重置为-1，方便下一轮检测
 			ReadRate();
 
