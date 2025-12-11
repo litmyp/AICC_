@@ -1,0 +1,33 @@
+# Waf build artifacts
+simulation/build/
+simulation/.lock-waf_*
+simulation/.waf*/
+simulation/c4che/
+
+# Waf configuration outputs
+simulation/waf.lock*
+simulation/config.log
+simulation/config.status
+
+# Generated run outputs
+simulation/temp*.txt
+simulation/output.txt
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Generic temporary files
+*.log
+*.tmp
+simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Build.pyc
+simulation/.lock-waf_linux2_build
+simulation/utils.pyc
+simulation/waf
+simulation/wutils.pyc
+simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/__init__.pyc
+simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/ansiterm.pyc
+simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Build.pyc
+simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/ConfigSet.pyc
+simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Configure.pyc
+simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Context.pyc

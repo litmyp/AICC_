@@ -1,21 +1,21 @@
-# project ns (3.18) configured on Wed Dec 10 18:20:01 2025 by
+# project ns (3.18) configured on Thu Dec 11 10:02:01 2025 by
 # waf 1.7.11 (abi 98, python 20712f0 on linux2)
 # using ./waf configure
 #
 ----------------------------------------
 Setting top to
-/mnt/aicc_12.10/simulation
+/root/rhy/AICC_/simulation
 ----------------------------------------
 Setting out to
-/mnt/aicc_12.10/simulation/build
+/root/rhy/AICC_/simulation/build
 ----------------------------------------
 Checking for 'gcc' (c compiler)
-find program=['gcc', 'cc'] paths=['/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='CC' -> '/usr/bin/gcc'
-find program=['ar'] paths=['/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='AR' -> '/usr/bin/ar'
+find program=['gcc', 'cc'] paths=['/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand', '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli', '/root/.vscode-server/cli/servers/Stable-ac4cbdf48759c7d8c3eb91ffe6bb04316e263c57/server/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='CC' -> '/usr/bin/gcc'
+find program=['ar'] paths=['/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand', '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli', '/root/.vscode-server/cli/servers/Stable-ac4cbdf48759c7d8c3eb91ffe6bb04316e263c57/server/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='AR' -> '/usr/bin/ar'
 /usr/bin/gcc
 ----------------------------------------
 Checking for 'g++' (c++ compiler)
-find program=['g++', 'c++'] paths=['/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='CXX' -> '/usr/bin/g++'
+find program=['g++', 'c++'] paths=['/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand', '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli', '/root/.vscode-server/cli/servers/Stable-ac4cbdf48759c7d8c3eb91ffe6bb04316e263c57/server/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='CXX' -> '/usr/bin/g++'
 (tool ar is already loaded, skipping)
 /usr/bin/g++
 ---------------------------------------------------------
@@ -30,12 +30,12 @@ int main() { return 0; }
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-Wl,--soname=foo', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '../test.cc', '-c', '-o', 'test.cc.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/test.cc.1.o -> build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cc.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cc.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 ok
 ---------------------------------------------------------
 Checking for program python
 /root/miniconda3/envs/ns317/bin/python
-find program=['python'] paths=['/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='PYTHON' -> '/root/miniconda3/envs/ns317/bin/python'
+find program=['python'] paths=['/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand', '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli', '/root/.vscode-server/cli/servers/Stable-ac4cbdf48759c7d8c3eb91ffe6bb04316e263c57/server/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='PYTHON' -> '/root/miniconda3/envs/ns317/bin/python'
 ['/root/miniconda3/envs/ns317/bin/python', '-c', 'import sys\nfor x in sys.version_info: print(str(x))']
 out: 2
 7
@@ -101,12 +101,12 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-fno-strict-aliasing', '-fwrapv', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DPYTHONDIR="/usr/local/lib/python2.7/site-packages"', '-DPYTHONARCHDIR="/usr/local/lib/python2.7/site-packages"', '-DNDEBUG', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_b752b3d89ee6a6e276aa65af46918b1e/testbuild/test.cpp.1.o -> build/.conf_check_b752b3d89ee6a6e276aa65af46918b1e/testbuild/testprog
 [0m
-['/usr/bin/g++', '-Wl,-rpath=/root/miniconda3/envs/ns317/lib', '-Wl,--no-as-needed', '-Wl,--sysroot=/', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_b752b3d89ee6a6e276aa65af46918b1e/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic', '-L/root/miniconda3/envs/ns317/lib', '-L/root/miniconda3/envs/ns317/lib', '-lpython2.7']
+['/usr/bin/g++', '-Wl,-rpath=/root/miniconda3/envs/ns317/lib', '-Wl,--no-as-needed', '-Wl,--sysroot=/', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_b752b3d89ee6a6e276aa65af46918b1e/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic', '-L/root/miniconda3/envs/ns317/lib', '-L/root/miniconda3/envs/ns317/lib', '-lpython2.7']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for program /root/miniconda3/envs/ns317/bin/python-config,python2.7-config,python-config-2.7,python2.7m-config
 /root/miniconda3/envs/ns317/bin/python-config
-find program=['/root/miniconda3/envs/ns317/bin/python-config', 'python2.7-config', 'python-config-2.7', 'python2.7m-config'] paths=['/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='PYTHON_CONFIG' -> '/root/miniconda3/envs/ns317/bin/python-config'
+find program=['/root/miniconda3/envs/ns317/bin/python-config', 'python2.7-config', 'python-config-2.7', 'python2.7m-config'] paths=['/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand', '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli', '/root/.vscode-server/cli/servers/Stable-ac4cbdf48759c7d8c3eb91ffe6bb04316e263c57/server/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='PYTHON_CONFIG' -> '/root/miniconda3/envs/ns317/bin/python-config'
 ['/root/miniconda3/envs/ns317/bin/python-config', '--includes']
 out: -I/root/miniconda3/envs/ns317/include/python2.7 -I/root/miniconda3/envs/ns317/include/python2.7
 
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-fno-strict-aliasing', '-fwrapv', '-fno-strict-aliasing', '-I/root/miniconda3/envs/ns317/include/python2.7', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DPYTHONDIR="/usr/local/lib/python2.7/site-packages"', '-DPYTHONARCHDIR="/usr/local/lib/python2.7/site-packages"', '-DNDEBUG', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_1f933b02106127ce3a9f4633a0e368e7/testbuild/test.cpp.1.o -> build/.conf_check_1f933b02106127ce3a9f4633a0e368e7/testbuild/testprog
 [0m
-['/usr/bin/g++', '-Wl,-rpath=/root/miniconda3/envs/ns317/lib', '-Wl,--no-as-needed', '-Wl,--sysroot=/', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_1f933b02106127ce3a9f4633a0e368e7/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic', '-L/root/miniconda3/envs/ns317/lib', '-lpython2.7']
+['/usr/bin/g++', '-Wl,-rpath=/root/miniconda3/envs/ns317/lib', '-Wl,--no-as-needed', '-Wl,--sysroot=/', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_1f933b02106127ce3a9f4633a0e368e7/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic', '-L/root/miniconda3/envs/ns317/lib', '-lpython2.7']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for compilation flag -fvisibility=hidden... support
@@ -153,7 +153,7 @@ int main() { return 0; }
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-fvisibility=hidden', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DPYTHONDIR="/usr/local/lib/python2.7/site-packages"', '-DPYTHONARCHDIR="/usr/local/lib/python2.7/site-packages"', '-DHAVE_PYTHON_H=1', '../test.cc', '-c', '-o', 'test.cc.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/test.cc.1.o -> build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cc.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cc.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 ok
 -----------------------------------------------------------------------------------------------------------------------
 Checking for compilation flag -Wno-array-bounds... support
@@ -167,7 +167,7 @@ int main() { return 0; }
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-Wno-array-bounds', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DPYTHONDIR="/usr/local/lib/python2.7/site-packages"', '-DPYTHONARCHDIR="/usr/local/lib/python2.7/site-packages"', '-DHAVE_PYTHON_H=1', '../test.cc', '-c', '-o', 'test.cc.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/test.cc.1.o -> build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cc.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cc.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 ok
 -----------------------------------------------------------------------------------------------------------------------
 Checking for pybindgen location
@@ -180,7 +180,7 @@ err: Traceback (most recent call last):
 ImportError: No module named pybindgen
 
 not found
-from /mnt/aicc_12.10/simulation/bindings/python: Could not find the python module 'pybindgen'
+from /root/rhy/AICC_/simulation/bindings/python: Could not find the python module 'pybindgen'
 -----------------------------------------------------------------------------------------------------------------------
 Checking boost includes
 1_71
@@ -193,7 +193,7 @@ Trying pattern boost_system(-1_71)+
 Trying pattern boost_system(-gcc[0-9]{0,3})+
 Trying pattern boost_system
 Trying pattern boost_system
-from /mnt/aicc_12.10/simulation/src: lib system not found in /lib64
+from /root/rhy/AICC_/simulation/src: lib system not found in /lib64
 not found
 -----------------------------------------------------------------------------------------------------------------------
 Checking boost includes
@@ -207,7 +207,7 @@ Trying pattern boost_system(-1_71)+
 Trying pattern boost_system(-gcc[0-9]{0,3})+
 Trying pattern boost_system
 Trying pattern boost_system
-from /mnt/aicc_12.10/simulation/src: lib system not found in /lib64
+from /root/rhy/AICC_/simulation/src: lib system not found in /lib64
 not found
 -----------------------------------------------------------------------------------------------------------------------
 Checking for click location
@@ -215,13 +215,13 @@ not found
 -----------------------------------------------------------------------------------------------------------------------
 Checking for program pkg-config
 not found
-find program=['pkg-config'] paths=['/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='PKGCONFIG' -> ''
-from /mnt/aicc_12.10/simulation/src/config-store: Could not find the program pkg-config
+find program=['pkg-config'] paths=['/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand', '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli', '/root/.vscode-server/cli/servers/Stable-ac4cbdf48759c7d8c3eb91ffe6bb04316e263c57/server/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='PKGCONFIG' -> ''
+from /root/rhy/AICC_/simulation/src/config-store: Could not find the program pkg-config
 -----------------------------------------------------------------------------------------------------------------------
 Checking for program pkg-config
 not found
-find program=['pkg-config'] paths=['/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='PKGCONFIG' -> ''
-from /mnt/aicc_12.10/simulation/src/config-store: Could not find the program pkg-config
+find program=['pkg-config'] paths=['/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand', '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli', '/root/.vscode-server/cli/servers/Stable-ac4cbdf48759c7d8c3eb91ffe6bb04316e263c57/server/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='PKGCONFIG' -> ''
+from /root/rhy/AICC_/simulation/src/config-store: Could not find the program pkg-config
 -----------------------------------------------------------------------------------------------------------------------
 Checking for type uint128_t
 ==>
@@ -252,18 +252,18 @@ err: ../test.cpp: In function ‘int main(int, char**)’:
   if (sizeof (uint128_t)) return 0;
               ^
 
-from /mnt/aicc_12.10/simulation/src/core: Test does not build: Traceback (most recent call last):
-  File "/mnt/aicc_12.10/simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Tools/c_config.py", line 459, in run_c_code
+from /root/rhy/AICC_/simulation/src/core: Test does not build: Traceback (most recent call last):
+  File "/root/rhy/AICC_/simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Tools/c_config.py", line 459, in run_c_code
     bld.compile()
-  File "/mnt/aicc_12.10/simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Build.py", line 188, in compile
+  File "/root/rhy/AICC_/simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Build.py", line 188, in compile
     raise Errors.BuildError(self.producer.error)
 BuildError: Build failed
  -> task in 'testprog' failed (exit status 1): 
-	{task 139910844391504: cxx test.cpp -> test.cpp.1.o}
+	{task 139633318233680: cxx test.cpp -> test.cpp.1.o}
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 
 not found
-from /mnt/aicc_12.10/simulation/src/core: The configuration failed
+from /root/rhy/AICC_/simulation/src/core: The configuration failed
 -----------------------------------------------------------------------------------------------------------------------
 Checking for type __uint128_t
 ==>
@@ -282,7 +282,7 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_ace1886511f08627ee2e4ca020806295/testbuild/test.cpp.1.o -> build/.conf_check_ace1886511f08627ee2e4ca020806295/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_ace1886511f08627ee2e4ca020806295/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_ace1886511f08627ee2e4ca020806295/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking high precision time implementation
@@ -303,7 +303,7 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_fa0c4ec9c63ac505501cc0863d9bdc48/testbuild/test.cpp.1.o -> build/.conf_check_fa0c4ec9c63ac505501cc0863d9bdc48/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_fa0c4ec9c63ac505501cc0863d9bdc48/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_fa0c4ec9c63ac505501cc0863d9bdc48/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for header inttypes.h
@@ -321,7 +321,7 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_STDINT_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_7c67b81911f8bf0aede92c843d0e47cf/testbuild/test.cpp.1.o -> build/.conf_check_7c67b81911f8bf0aede92c843d0e47cf/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_7c67b81911f8bf0aede92c843d0e47cf/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_7c67b81911f8bf0aede92c843d0e47cf/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for header sys/inttypes.h
@@ -340,18 +340,18 @@ int main(int argc, char **argv) {
 err: ../test.cpp:1:26: fatal error: sys/inttypes.h: No such file or directory
 compilation terminated.
 
-from /mnt/aicc_12.10/simulation/src/core: Test does not build: Traceback (most recent call last):
-  File "/mnt/aicc_12.10/simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Tools/c_config.py", line 459, in run_c_code
+from /root/rhy/AICC_/simulation/src/core: Test does not build: Traceback (most recent call last):
+  File "/root/rhy/AICC_/simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Tools/c_config.py", line 459, in run_c_code
     bld.compile()
-  File "/mnt/aicc_12.10/simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Build.py", line 188, in compile
+  File "/root/rhy/AICC_/simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Build.py", line 188, in compile
     raise Errors.BuildError(self.producer.error)
 BuildError: Build failed
  -> task in 'testprog' failed (exit status 1): 
-	{task 139910844414544: cxx test.cpp -> test.cpp.1.o}
+	{task 139633283612560: cxx test.cpp -> test.cpp.1.o}
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_STDINT_H=1', '-DHAVE_INTTYPES_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 
 not found
-from /mnt/aicc_12.10/simulation/src/core: The configuration failed
+from /root/rhy/AICC_/simulation/src/core: The configuration failed
 -----------------------------------------------------------------------------------------------------------------------
 Checking for header sys/types.h
 ==>
@@ -368,7 +368,7 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_STDINT_H=1', '-DHAVE_INTTYPES_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_8d38681417ac64f5b5b7d4ca87b0e4f3/testbuild/test.cpp.1.o -> build/.conf_check_8d38681417ac64f5b5b7d4ca87b0e4f3/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_8d38681417ac64f5b5b7d4ca87b0e4f3/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_8d38681417ac64f5b5b7d4ca87b0e4f3/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for header sys/stat.h
@@ -386,7 +386,7 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_STDINT_H=1', '-DHAVE_INTTYPES_H=1', '-DHAVE_SYS_TYPES_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_8dd79274749d59bf459dfbeb1200c7d7/testbuild/test.cpp.1.o -> build/.conf_check_8dd79274749d59bf459dfbeb1200c7d7/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_8dd79274749d59bf459dfbeb1200c7d7/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_8dd79274749d59bf459dfbeb1200c7d7/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for header dirent.h
@@ -404,7 +404,7 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_STDINT_H=1', '-DHAVE_INTTYPES_H=1', '-DHAVE_SYS_TYPES_H=1', '-DHAVE_SYS_STAT_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_c94d96928742c001335a0559791a93d8/testbuild/test.cpp.1.o -> build/.conf_check_c94d96928742c001335a0559791a93d8/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_c94d96928742c001335a0559791a93d8/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_c94d96928742c001335a0559791a93d8/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for header stdlib.h
@@ -422,7 +422,7 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_STDINT_H=1', '-DHAVE_INTTYPES_H=1', '-DHAVE_SYS_TYPES_H=1', '-DHAVE_SYS_STAT_H=1', '-DHAVE_DIRENT_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_3a82ef2f96ebcc67f6086c98d2e6291e/testbuild/test.cpp.1.o -> build/.conf_check_3a82ef2f96ebcc67f6086c98d2e6291e/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_3a82ef2f96ebcc67f6086c98d2e6291e/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_3a82ef2f96ebcc67f6086c98d2e6291e/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for header signal.h
@@ -440,7 +440,7 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_STDINT_H=1', '-DHAVE_INTTYPES_H=1', '-DHAVE_SYS_TYPES_H=1', '-DHAVE_SYS_STAT_H=1', '-DHAVE_DIRENT_H=1', '-DHAVE_STDLIB_H=1', '-DHAVE_GETENV=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_48955ac54d2136a572805353a7b9b62d/testbuild/test.cpp.1.o -> build/.conf_check_48955ac54d2136a572805353a7b9b62d/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_48955ac54d2136a572805353a7b9b62d/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_48955ac54d2136a572805353a7b9b62d/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for header pthread.h
@@ -460,7 +460,7 @@ int main ()
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-pthread', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_STDINT_H=1', '-DHAVE_INTTYPES_H=1', '-DHAVE_SYS_TYPES_H=1', '-DHAVE_SYS_STAT_H=1', '-DHAVE_DIRENT_H=1', '-DHAVE_STDLIB_H=1', '-DHAVE_GETENV=1', '-DHAVE_SIGNAL_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_2be466e82e703a744ee152afe2b58299/testbuild/test.cpp.1.o -> build/.conf_check_2be466e82e703a744ee152afe2b58299/testbuild/testprog
 [0m
-['/usr/bin/g++', '-pthread', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_2be466e82e703a744ee152afe2b58299/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', '-pthread', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_2be466e82e703a744ee152afe2b58299/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for header stdint.h
@@ -478,7 +478,7 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_INTTYPES_H=1', '-DHAVE_SYS_TYPES_H=1', '-DHAVE_SYS_STAT_H=1', '-DHAVE_DIRENT_H=1', '-DHAVE_STDLIB_H=1', '-DHAVE_GETENV=1', '-DHAVE_SIGNAL_H=1', '-DHAVE_PTHREAD_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_fa0c4ec9c63ac505501cc0863d9bdc48/testbuild/test.cpp.1.o -> build/.conf_check_fa0c4ec9c63ac505501cc0863d9bdc48/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_fa0c4ec9c63ac505501cc0863d9bdc48/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_fa0c4ec9c63ac505501cc0863d9bdc48/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for header inttypes.h
@@ -496,7 +496,7 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_SYS_TYPES_H=1', '-DHAVE_SYS_STAT_H=1', '-DHAVE_DIRENT_H=1', '-DHAVE_STDLIB_H=1', '-DHAVE_GETENV=1', '-DHAVE_SIGNAL_H=1', '-DHAVE_PTHREAD_H=1', '-DHAVE_STDINT_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_7c67b81911f8bf0aede92c843d0e47cf/testbuild/test.cpp.1.o -> build/.conf_check_7c67b81911f8bf0aede92c843d0e47cf/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_7c67b81911f8bf0aede92c843d0e47cf/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_7c67b81911f8bf0aede92c843d0e47cf/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for header sys/inttypes.h
@@ -515,18 +515,18 @@ int main(int argc, char **argv) {
 err: ../test.cpp:1:26: fatal error: sys/inttypes.h: No such file or directory
 compilation terminated.
 
-from /mnt/aicc_12.10/simulation/src/core: Test does not build: Traceback (most recent call last):
-  File "/mnt/aicc_12.10/simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Tools/c_config.py", line 459, in run_c_code
+from /root/rhy/AICC_/simulation/src/core: Test does not build: Traceback (most recent call last):
+  File "/root/rhy/AICC_/simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Tools/c_config.py", line 459, in run_c_code
     bld.compile()
-  File "/mnt/aicc_12.10/simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Build.py", line 188, in compile
+  File "/root/rhy/AICC_/simulation/.waf-1.7.11-edc6ccb516c5e3f9b892efc9f53a610f/waflib/Build.py", line 188, in compile
     raise Errors.BuildError(self.producer.error)
 BuildError: Build failed
  -> task in 'testprog' failed (exit status 1): 
-	{task 139910843981904: cxx test.cpp -> test.cpp.1.o}
+	{task 139633318365392: cxx test.cpp -> test.cpp.1.o}
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_SYS_TYPES_H=1', '-DHAVE_SYS_STAT_H=1', '-DHAVE_DIRENT_H=1', '-DHAVE_STDLIB_H=1', '-DHAVE_GETENV=1', '-DHAVE_SIGNAL_H=1', '-DHAVE_PTHREAD_H=1', '-DHAVE_STDINT_H=1', '-DHAVE_INTTYPES_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 
 not found
-from /mnt/aicc_12.10/simulation/src/core: The configuration failed
+from /root/rhy/AICC_/simulation/src/core: The configuration failed
 -----------------------------------------------------------------------------------------------------------------------
 Checking for library rt
 ==>
@@ -542,7 +542,7 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-pthread', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_SYS_TYPES_H=1', '-DHAVE_SYS_STAT_H=1', '-DHAVE_DIRENT_H=1', '-DHAVE_STDLIB_H=1', '-DHAVE_GETENV=1', '-DHAVE_SIGNAL_H=1', '-DHAVE_PTHREAD_H=1', '-DHAVE_STDINT_H=1', '-DHAVE_INTTYPES_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_5ef57bc0d8aa3565949b6ce1186fd4a7/testbuild/test.cpp.1.o -> build/.conf_check_5ef57bc0d8aa3565949b6ce1186fd4a7/testbuild/testprog
 [0m
-['/usr/bin/g++', '-pthread', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_5ef57bc0d8aa3565949b6ce1186fd4a7/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic', '-lrt']
+['/usr/bin/g++', '-pthread', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_5ef57bc0d8aa3565949b6ce1186fd4a7/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic', '-lrt']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for header netpacket/packet.h
@@ -560,7 +560,7 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_f00bb2460dc7019f64c1a347be5879fa/testbuild/test.cpp.1.o -> build/.conf_check_f00bb2460dc7019f64c1a347be5879fa/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_f00bb2460dc7019f64c1a347be5879fa/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_f00bb2460dc7019f64c1a347be5879fa/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for NSC location
@@ -568,8 +568,8 @@ not found
 -----------------------------------------------------------------------------------------------------------------------
 Checking for program pkg-config
 not found
-find program=['pkg-config'] paths=['/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='PKGCONFIG' -> ''
-from /mnt/aicc_12.10/simulation/src/stats: Could not find the program pkg-config
+find program=['pkg-config'] paths=['/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand', '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli', '/root/.vscode-server/cli/servers/Stable-ac4cbdf48759c7d8c3eb91ffe6bb04316e263c57/server/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='PKGCONFIG' -> ''
+from /root/rhy/AICC_/simulation/src/stats: Could not find the program pkg-config
 -----------------------------------------------------------------------------------------------------------------------
 Checking for header linux/if_tun.h
 ==>
@@ -586,22 +586,22 @@ int main(int argc, char **argv) {
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE_PACKET_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_79f849e1774b3cde8897857e178c7c8c/testbuild/test.cpp.1.o -> build/.conf_check_79f849e1774b3cde8897857e178c7c8c/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cpp.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_79f849e1774b3cde8897857e178c7c8c/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cpp.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_79f849e1774b3cde8897857e178c7c8c/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 yes
 -----------------------------------------------------------------------------------------------------------------------
 Checking for program sudo
 /usr/bin/sudo
-find program=['sudo'] paths=['/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='SUDO' -> '/usr/bin/sudo'
+find program=['sudo'] paths=['/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand', '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli', '/root/.vscode-server/cli/servers/Stable-ac4cbdf48759c7d8c3eb91ffe6bb04316e263c57/server/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='SUDO' -> '/usr/bin/sudo'
 -----------------------------------------------------------------------------------------------------------------------
 Checking for program valgrind
 not found
-find program=['valgrind'] paths=['/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='VALGRIND' -> ''
-from /mnt/aicc_12.10/simulation: Could not find the program valgrind
+find program=['valgrind'] paths=['/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand', '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli', '/root/.vscode-server/cli/servers/Stable-ac4cbdf48759c7d8c3eb91ffe6bb04316e263c57/server/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='VALGRIND' -> ''
+from /root/rhy/AICC_/simulation: Could not find the program valgrind
 -----------------------------------------------------------------------------------------------------------------------
 Checking for program pkg-config
 not found
-find program=['pkg-config'] paths=['/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='PKGCONFIG' -> ''
-from /mnt/aicc_12.10/simulation: Could not find the program pkg-config
+find program=['pkg-config'] paths=['/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand', '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli', '/root/.vscode-server/cli/servers/Stable-ac4cbdf48759c7d8c3eb91ffe6bb04316e263c57/server/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='PKGCONFIG' -> ''
+from /root/rhy/AICC_/simulation: Could not find the program pkg-config
 -----------------------------------------------------------------------------------------------------------------------
 Checking for compilation flag -Wno-error=deprecated-d... support
 ==>
@@ -614,7 +614,7 @@ int main() { return 0; }
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-Wno-error=deprecated-declarations', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE_PACKET_H=1', '-DHAVE_IF_TUN_H=1', '../test.cc', '-c', '-o', 'test.cc.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/test.cc.1.o -> build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cc.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cc.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 ok
 -----------------------------------------------------------------------------------------------------------------------
 Checking for compilation flag -Wno-error=deprecated-d... support
@@ -628,7 +628,7 @@ int main() { return 0; }
 ['/usr/bin/gcc', '-Wno-error=deprecated-declarations', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE_PACKET_H=1', '-DHAVE_IF_TUN_H=1', '../test.c', '-c', '-o', 'test.c.1.o']
 [2/2] [33mcprogram: build/.conf_check_d8a2c40aecfb7c8eac7dd03fcbfb1110/testbuild/test.c.1.o -> build/.conf_check_d8a2c40aecfb7c8eac7dd03fcbfb1110/testbuild/testprog
 [0m
-['/usr/bin/gcc', 'test.c.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_d8a2c40aecfb7c8eac7dd03fcbfb1110/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/gcc', 'test.c.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_d8a2c40aecfb7c8eac7dd03fcbfb1110/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 ok
 -----------------------------------------------------------------------------------------------------------------------
 Checking for compilation flag -fstrict-aliasing... support
@@ -642,7 +642,7 @@ int main() { return 0; }
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-Wno-error=deprecated-declarations', '-fstrict-aliasing', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE_PACKET_H=1', '-DHAVE_IF_TUN_H=1', '../test.cc', '-c', '-o', 'test.cc.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/test.cc.1.o -> build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cc.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cc.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 ok
 -----------------------------------------------------------------------------------------------------------------------
 Checking for compilation flag -fstrict-aliasing... support
@@ -656,7 +656,7 @@ int main() { return 0; }
 ['/usr/bin/gcc', '-fstrict-aliasing', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE_PACKET_H=1', '-DHAVE_IF_TUN_H=1', '../test.c', '-c', '-o', 'test.c.1.o']
 [2/2] [33mcprogram: build/.conf_check_d8a2c40aecfb7c8eac7dd03fcbfb1110/testbuild/test.c.1.o -> build/.conf_check_d8a2c40aecfb7c8eac7dd03fcbfb1110/testbuild/testprog
 [0m
-['/usr/bin/gcc', 'test.c.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_d8a2c40aecfb7c8eac7dd03fcbfb1110/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/gcc', 'test.c.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_d8a2c40aecfb7c8eac7dd03fcbfb1110/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 ok
 -----------------------------------------------------------------------------------------------------------------------
 Checking for compilation flag -Wstrict-aliasing... support
@@ -670,7 +670,7 @@ int main() { return 0; }
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-std=gnu++11', '-Wno-error=deprecated-declarations', '-fstrict-aliasing', '-Wstrict-aliasing', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE_PACKET_H=1', '-DHAVE_IF_TUN_H=1', '../test.cc', '-c', '-o', 'test.cc.1.o']
 [2/2] [33mcxxprogram: build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/test.cc.1.o -> build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog
 [0m
-['/usr/bin/g++', 'test.cc.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/g++', 'test.cc.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_fe0ca542f39064c5a14ee41a2e983996/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 ok
 -----------------------------------------------------------------------------------------------------------------------
 Checking for compilation flag -Wstrict-aliasing... support
@@ -684,9 +684,9 @@ int main() { return 0; }
 ['/usr/bin/gcc', '-Wstrict-aliasing', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE_PACKET_H=1', '-DHAVE_IF_TUN_H=1', '../test.c', '-c', '-o', 'test.c.1.o']
 [2/2] [33mcprogram: build/.conf_check_d8a2c40aecfb7c8eac7dd03fcbfb1110/testbuild/test.c.1.o -> build/.conf_check_d8a2c40aecfb7c8eac7dd03fcbfb1110/testbuild/testprog
 [0m
-['/usr/bin/gcc', 'test.c.1.o', '-o', '/mnt/aicc_12.10/simulation/build/.conf_check_d8a2c40aecfb7c8eac7dd03fcbfb1110/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
+['/usr/bin/gcc', 'test.c.1.o', '-o', '/root/rhy/AICC_/simulation/build/.conf_check_d8a2c40aecfb7c8eac7dd03fcbfb1110/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic']
 ok
 -----------------------------------------------------------------------------------------------------------------------
 Checking for program doxygen
 /usr/bin/doxygen
-find program=['doxygen'] paths=['/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/root/.cursor-server/bin/45fd70f3fe72037444ba35c9e51ce86a1977ac10/bin/remote-cli', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='DOXYGEN' -> '/usr/bin/doxygen'
+find program=['doxygen'] paths=['/root/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand', '/root/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli', '/root/.vscode-server/cli/servers/Stable-ac4cbdf48759c7d8c3eb91ffe6bb04316e263c57/server/bin/remote-cli', '/root/miniconda3/envs/ns317/bin', '/root/miniconda3/condabin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin', '/usr/local/cuda/bin', '/usr/bin', '/usr/sbin'] var='DOXYGEN' -> '/usr/bin/doxygen'
