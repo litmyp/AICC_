@@ -239,6 +239,13 @@ namespace ns3 {
 	{
 		NS_LOG_FUNCTION(this);
 
+		std::cout << "[PFC][QbbNetDevice] time=" << Simulator::Now().GetTimeStep()
+				  << " node=" << m_node->GetId()
+				  << " ifIndex=" << m_ifIndex
+				  << " queue=" << qIndex
+				  << " type=" << (type == 0 ? "PAUSE" : "RESUME")
+				  << " bytesInQueue=" << m_queue->GetNBytes(qIndex)
+				  << std::endl;
 		PointToPointNetDevice::DoDispose();
 	}
 
@@ -301,9 +308,19 @@ namespace ns3 {
 				m_promiscSnifferTrace(p);
 				Ipv4Header h;
 				Ptr<Packet> packet = p->Copy();
+							std::cout << "[PFC][QbbNetDevice] time=" << Simulator::Now().GetTimeStep()
+									  << " node=" << m_node->GetId()
+									  << " ifIndex=" << m_ifIndex
+									  << " queue=" << qIndex
+									  << " action=PAUSE_RECEIVED" << std::endl;
 				uint16_t protocol = 0;
 				ProcessHeader(packet, protocol);
 				packet->RemoveHeader(h);
+							std::cout << "[PFC][QbbNetDevice] time=" << Simulator::Now().GetTimeStep()
+									  << " node=" << m_node->GetId()
+									  << " ifIndex=" << m_ifIndex
+									  << " queue=" << qIndex
+									  << " action=RESUME_RECEIVED" << std::endl;
 				FlowIdTag t;
 				uint32_t qIndex = m_queue->GetLastQueue();
 				if (qIndex == 0){//this is a pause or cnp, send it immediately!
