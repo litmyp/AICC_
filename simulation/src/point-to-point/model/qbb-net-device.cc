@@ -238,14 +238,6 @@ namespace ns3 {
 		QbbNetDevice::DoDispose()
 	{
 		NS_LOG_FUNCTION(this);
-
-		std::cout << "[PFC][QbbNetDevice] time=" << Simulator::Now().GetTimeStep()
-				  << " node=" << m_node->GetId()
-				  << " ifIndex=" << m_ifIndex
-				  << " queue=" << qIndex
-				  << " type=" << (type == 0 ? "PAUSE" : "RESUME")
-				  << " bytesInQueue=" << m_queue->GetNBytes(qIndex)
-				  << std::endl;
 		PointToPointNetDevice::DoDispose();
 	}
 
@@ -308,19 +300,9 @@ namespace ns3 {
 				m_promiscSnifferTrace(p);
 				Ipv4Header h;
 				Ptr<Packet> packet = p->Copy();
-							std::cout << "[PFC][QbbNetDevice] time=" << Simulator::Now().GetTimeStep()
-									  << " node=" << m_node->GetId()
-									  << " ifIndex=" << m_ifIndex
-									  << " queue=" << qIndex
-									  << " action=PAUSE_RECEIVED" << std::endl;
 				uint16_t protocol = 0;
 				ProcessHeader(packet, protocol);
 				packet->RemoveHeader(h);
-							std::cout << "[PFC][QbbNetDevice] time=" << Simulator::Now().GetTimeStep()
-									  << " node=" << m_node->GetId()
-									  << " ifIndex=" << m_ifIndex
-									  << " queue=" << qIndex
-									  << " action=RESUME_RECEIVED" << std::endl;
 				FlowIdTag t;
 				uint32_t qIndex = m_queue->GetLastQueue();
 				if (qIndex == 0){//this is a pause or cnp, send it immediately!
@@ -390,9 +372,19 @@ namespace ns3 {
 			if (!m_qbbEnabled) return;
 			unsigned qIndex = ch.pfc.qIndex;
 			if (ch.pfc.time > 0){
+				std::cout << "[PFC][QbbNetDevice] time=" << Simulator::Now().GetTimeStep()
+				          << " node=" << m_node->GetId()
+				          << " ifIndex=" << m_ifIndex
+				          << " queue=" << qIndex
+				          << " action=PAUSE_RECEIVED" << std::endl;
 				m_tracePfc(1);
 				m_paused[qIndex] = true;
 			}else{
+				std::cout << "[PFC][QbbNetDevice] time=" << Simulator::Now().GetTimeStep()
+				          << " node=" << m_node->GetId()
+				          << " ifIndex=" << m_ifIndex
+				          << " queue=" << qIndex
+				          << " action=RESUME_RECEIVED" << std::endl;
 				m_tracePfc(0);
 				Resume(qIndex);
 			}
@@ -427,6 +419,13 @@ namespace ns3 {
 		Ptr<Packet> p = Create<Packet>(0);
 		PauseHeader pauseh((type == 0 ? m_pausetime : 0), m_queue->GetNBytes(qIndex), qIndex);
 		p->AddHeader(pauseh);
+		std::cout << "[PFC][QbbNetDevice] time=" << Simulator::Now().GetTimeStep()
+		          << " node=" << m_node->GetId()
+		          << " ifIndex=" << m_ifIndex
+		          << " queue=" << qIndex
+		          << " action=" << (type == 0 ? "SEND_PAUSE" : "SEND_RESUME")
+		          << " bytesInQueue=" << m_queue->GetNBytes(qIndex)
+		          << std::endl;
 		Ipv4Header ipv4h;  // Prepare IPv4 header
 		ipv4h.SetProtocol(0xFE);
 		ipv4h.SetSource(m_node->GetObject<Ipv4>()->GetAddress(m_ifIndex, 0).GetLocal());
