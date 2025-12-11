@@ -10,7 +10,9 @@
 #include "qbb-net-device.h"
 #include "ppp-header.h"
 #include "ns3/int-header.h"
+#include "ns3/simulator.h"
 #include <cmath>
+#include <iostream>
 
 namespace ns3 {
 
@@ -91,6 +93,12 @@ int SwitchNode::GetOutDev(Ptr<const Packet> p, CustomHeader &ch){
 void SwitchNode::CheckAndSendPfc(uint32_t inDev, uint32_t qIndex){
 	Ptr<QbbNetDevice> device = DynamicCast<QbbNetDevice>(m_devices[inDev]);
 	if (m_mmu->CheckShouldPause(inDev, qIndex)){
+		std::cout << "[PFC][SwitchNode] time=" << Simulator::Now().GetTimeStep()
+		          << " switch=" << GetId()
+		          << " ingressPort=" << inDev
+		          << " queue=" << qIndex
+		          << " shared=" << m_mmu->GetSharedUsed(inDev, qIndex)
+		          << " -> send PAUSE" << std::endl;
 		device->SendPfc(qIndex, 0);
 		m_mmu->SetPause(inDev, qIndex);
 	}
@@ -98,6 +106,12 @@ void SwitchNode::CheckAndSendPfc(uint32_t inDev, uint32_t qIndex){
 void SwitchNode::CheckAndSendResume(uint32_t inDev, uint32_t qIndex){
 	Ptr<QbbNetDevice> device = DynamicCast<QbbNetDevice>(m_devices[inDev]);
 	if (m_mmu->CheckShouldResume(inDev, qIndex)){
+		std::cout << "[PFC][SwitchNode] time=" << Simulator::Now().GetTimeStep()
+		          << " switch=" << GetId()
+		          << " ingressPort=" << inDev
+		          << " queue=" << qIndex
+		          << " shared=" << m_mmu->GetSharedUsed(inDev, qIndex)
+		          << " -> send RESUME" << std::endl;
 		device->SendPfc(qIndex, 1);
 		m_mmu->SetResume(inDev, qIndex);
 	}
