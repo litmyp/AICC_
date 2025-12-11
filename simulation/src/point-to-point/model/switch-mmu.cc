@@ -74,13 +74,32 @@ namespace ns3 {
 		egress_bytes[port][qIndex] -= psize;
 	}
 	bool SwitchMmu::CheckShouldPause(uint32_t port, uint32_t qIndex){
-		return !paused[port][qIndex] && (hdrm_bytes[port][qIndex] > 0 || GetSharedUsed(port, qIndex) >= GetPfcThreshold(port));
+		bool shouldPause = !paused[port][qIndex] && (hdrm_bytes[port][qIndex] > 0 || GetSharedUsed(port, qIndex) >= GetPfcThreshold(port));
+		if (shouldPause){
+			std::cout << "[PFC][SwitchMmu] time=" << Simulator::Now().GetTimeStep()
+					  << " port=" << port
+					  << " queue=" << qIndex
+					  << " hdrm=" << hdrm_bytes[port][qIndex]
+					  << " shared=" << GetSharedUsed(port, qIndex)
+					  << " threshold=" << GetPfcThreshold(port)
+					  << " -> pause" << std::endl;
+		}
+		return shouldPause;
 	}
 	bool SwitchMmu::CheckShouldResume(uint32_t port, uint32_t qIndex){
 		if (!paused[port][qIndex])
 			return false;
 		uint32_t shared_used = GetSharedUsed(port, qIndex);
-		return hdrm_bytes[port][qIndex] == 0 && (shared_used == 0 || shared_used + resume_offset <= GetPfcThreshold(port));
+		bool shouldResume = hdrm_bytes[port][qIndex] == 0 && (shared_used == 0 || shared_used + resume_offset <= GetPfcThreshold(port));
+		if (shouldResume){
+			std::cout << "[PFC][SwitchMmu] time=" << Simulator::Now().GetTimeStep()
+					  << " port=" << port
+					  << " queue=" << qIndex
+					  << " shared=" << shared_used
+					  << " threshold=" << GetPfcThreshold(port)
+					  << " -> resume" << std::endl;
+		}
+		return shouldResume;
 	}
 	void SwitchMmu::SetPause(uint32_t port, uint32_t qIndex){
 		paused[port][qIndex] = true;
