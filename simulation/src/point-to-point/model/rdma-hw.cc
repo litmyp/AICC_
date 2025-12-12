@@ -330,14 +330,14 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch){
 
 	int x = ReceiverCheckSeq(ch.udp.seq, rxQp, payload_size);
 	switch (x){
-	case 1:
+	case 1:	//生成ACK
 		std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
 		          << " node=" << m_node->GetId()
 		          << " flow=" << ch.sip << "->" << ch.dip
 		          << " seq=" << ch.udp.seq
 		          << " action=ACK_TRIGGER" << std::endl;
 		break;
-	case 2:
+	case 2:	//生成NACK，提醒重传
 		std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
 		          << " node=" << m_node->GetId()
 		          << " flow=" << ch.sip << "->" << ch.dip
@@ -345,21 +345,21 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch){
 		          << " received=" << ch.udp.seq
 		          << " action=NACK_TRIGGER" << std::endl;
 		break;
-	case 3:
+	case 3:	//重复包，不触发反馈
 		std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
 		          << " node=" << m_node->GetId()
 		          << " flow=" << ch.sip << "->" << ch.dip
 		          << " seq=" << ch.udp.seq
 		          << " action=DUPLICATE" << std::endl;
 		break;
-	case 4:
+	case 4:	//NACK被抑制,NACK冷却或已发送同一NACK
 		std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
 		          << " node=" << m_node->GetId()
 		          << " flow=" << ch.sip << "->" << ch.dip
 		          << " seq=" << ch.udp.seq
 		          << " action=NACK_SUPPRESSED" << std::endl;
 		break;
-	case 5:
+	case 5:	//按顺序收到，未累积到ACK触发阈值
 		std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
 		          << " node=" << m_node->GetId()
 		          << " flow=" << ch.sip << "->" << ch.dip
