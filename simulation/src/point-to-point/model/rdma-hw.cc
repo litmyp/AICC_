@@ -469,9 +469,9 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch){
 	std::cout << "[Retrans][ReceiveAck] time=" << Simulator::Now().GetTimeStep()
 	          << " node=" << m_node->GetId()
 	          << " flow=" << ch.sip << "->" << ch.dip
-	          << " type=" << (ch.l3Prot == 0xFD ? "NACK" : "ACK")
-	          << " seq=" << seq
-	          << " snd_una_before=" << qp->snd_una
+	          << " type=" << (ch.l3Prot == 0xFD ? "NACK" : "ACK")	//确认类型
+	          << " seq=" << seq	//确认序号
+	          << " snd_una_before=" << qp->snd_una	//发送未确认序号
 	          << std::endl;
 
 	uint32_t nic_idx = GetNicIdxOfQp(qp);
@@ -488,7 +488,7 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch){
 		std::cout << "[Retrans][ReceiveAck] time=" << Simulator::Now().GetTimeStep()
 		          << " node=" << m_node->GetId()
 		          << " flow=" << ch.sip << "->" << ch.dip
-		          << " snd_una_after=" << qp->snd_una
+		          << " snd_una_after=" << qp->snd_una	//发送未确认序号
 		          << std::endl;
 		if (qp->IsFinished()){
 			QpComplete(qp);
@@ -500,7 +500,7 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch){
 		          << " node=" << m_node->GetId()
 		          << " flow=" << ch.sip << "->" << ch.dip
 		          << " trigger=RECOVER_QUEUE" << std::endl;
-		RecoverQueue(qp);
+		RecoverQueue(qp);	//进入重传逻辑
 	}
 
 	// handle cnp
