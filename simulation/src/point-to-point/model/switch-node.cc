@@ -118,12 +118,13 @@ void SwitchNode::CheckAndSendResume(uint32_t inDev, uint32_t qIndex){
 }
 
 void SwitchNode::SendToDev(Ptr<Packet>p, CustomHeader &ch){
-	int idx = GetOutDev(p, ch);
-	if (idx >= 0){
+	int idx = GetOutDev(p, ch);	//根据数据包头部信息在路由表中查找下一跳输出端口索引。
+	if (idx >= 0){	//找到了下一跳端口
 		NS_ASSERT_MSG(m_devices[idx]->IsLinkUp(), "The routing table look up should return link that is up");
 
 		// determine the qIndex
 		uint32_t qIndex;
+		//检查是否为控制报文（QCN、PFC、ACK/NACK），如果是则使用最高优先级队列0，否则根据协议类型选择队列。
 		if (ch.l3Prot == 0xFF || ch.l3Prot == 0xFE || (m_ackHighPrio && (ch.l3Prot == 0xFD || ch.l3Prot == 0xFC))){  //QCN or PFC or NACK, go highest priority
 			qIndex = 0;
 		}else{
@@ -131,17 +132,17 @@ void SwitchNode::SendToDev(Ptr<Packet>p, CustomHeader &ch){
 		}
 
 		// admission control
-		FlowIdTag t;
+		FlowIdTag t;	//获取数据包的流ID标签
 		p->PeekPacketTag(t);
-		uint32_t inDev = t.GetFlowId();
-		if (qIndex != 0){ //not highest priority
+		uint32_t inDev = t.GetFlowId();	//获取最初进入交换机的入口端口索引
+		if (qIndex != 0){ //not highest priority	对非最高优先级队列进行入队控制
 			if (m_mmu->CheckIngressAdmission(inDev, qIndex, p->GetSize()) && m_mmu->CheckEgressAdmission(idx, qIndex, p->GetSize())){			// Admission control
 				m_mmu->UpdateIngressAdmission(inDev, qIndex, p->GetSize());
 				m_mmu->UpdateEgressAdmission(idx, qIndex, p->GetSize());
 			}else{
 				return; // Drop
 			}
-			CheckAndSendPfc(inDev, qIndex);
+			CheckAndSendPfc(inDev, qIndex);	//根据入队后的队列状态，检查是否需要发送PFC暂停帧。
 		}
 		m_bytes[inDev][idx][qIndex] += p->GetSize();
 		m_devices[idx]->SwitchSend(qIndex, p, ch);
