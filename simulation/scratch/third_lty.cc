@@ -1020,6 +1020,13 @@ int main(int argc, char *argv[])
 	std::cout<<"check simulator_stop_time=="<<simulator_stop_time<<std::endl;
 	std::cout<<"l2_ack_interval=="<<l2_ack_interval<<std::endl;
 	Simulator::Run();
+	Time simEndTime = Simulator::Now();
+	double maxSimTime = Simulator::GetMaximumSimulationTime().GetSeconds();
+	std::cout << "[AICC][统计] 仿真停止时刻: " << simEndTime.GetSeconds()
+	          << " s，配置的 SIMULATOR_STOP_TIME: " << simulator_stop_time << " s" << std::endl;
+	if (simEndTime.GetSeconds() >= maxSimTime) {
+		std::cout << "[AICC][提示] 仿真因为达到 SIMULATOR_STOP_TIME 而停止，可能仍有QP未完成。" << std::endl;
+	}
 	Simulator::Destroy();
 	NS_LOG_INFO("Done.");
 	fclose(trace_output);

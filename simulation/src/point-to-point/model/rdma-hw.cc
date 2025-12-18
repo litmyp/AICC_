@@ -25,9 +25,15 @@
 #include <cstring>
 #include <thread>
 #include <chrono>
+#include <unordered_set>
 
 
 namespace ns3{
+
+namespace {
+	// Tracks QPs that already emitted a minimum-rate warning to avoid repetitive logs.
+	std::unordered_set<uint32_t> g_minRateWarningIssued;
+}
 
 TypeId RdmaHw::GetTypeId (void)
 {
@@ -1320,6 +1326,35 @@ void RdmaHw::HandleAckMySelf(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader 
 				std::cout << "My CC: 将速率更新为 " << new_rate.GetBitRate() * 1e-9 << " Gb/s" << std::endl;
 				ChangeRate(qp, new_rate);
 				std::cout<<"执行速率变更,更新后的速率为:"<<qp->m_rate.GetBitRate()*1e-9 <<"Gb"<<std::endl;
+
+				uint64_t currentRateBps = qp->m_rate.GetBitRate();	//当前QP的速率
+				uint64_t minRateBps = m_minRate.GetBitRate();		//系统配置的最小速率
+				//if (currentRateBps > 0 && currentRateBps <= minRateBps && minRateBps > 0) {
+				if (currentRateBps > 0 && currentRateBps*1e-9 <= 1) {
+					uint64_t bytesLeft = qp->GetBytesLeft();	//当前QP剩余待发送的字节数
+					if (bytesLeft > 0) {
+						double simSec = Simulator::Now().GetSeconds();	//当前仿真时间（秒）
+						double stopSec = 16;	//配置的仿真停止时间（秒）
+						double estimatedFinishSec = simSec + (static_cast<double>(bytesLeft) * 8.0) / static_cast<double>(currentRateBps);	//预计完成时间（秒）
+						std::cout << "[AICC][诊断] 调试参数: currentRateBps=" << currentRateBps
+							  << " bps, minRateBps=" << minRateBps
+							  << " bps, bytesLeft=" << bytesLeft
+							  << " B, simSec=" << simSec
+							  << " s, stopSec=" << stopSec
+							  << " s, estimatedFinishSec=" << estimatedFinishSec
+							  << " s" << std::endl;
+						uint32_t qpHash = qp->GetHash();
+						// if (estimatedFinishSec > stopSec && g_minRateWarningIssued.insert(qpHash).second) {
+						if (estimatedFinishSec > stopSec ) {
+							std::cout << "[AICC][诊断] QP [" << qp->sip << ":" << qp->sport
+									<< " -> " << qp->dip << ":" << qp->dport << "] 仍有 " << bytesLeft
+									<< " 字节未发送，在最小速率 " << static_cast<double>(currentRateBps) / 1e9
+									<< " Gb/s 下预计完成时间为 " << estimatedFinishSec
+									<< " s，超过 SIMULATOR_STOP_TIME 配置的 " << stopSec
+									<< " s。" << std::endl;
+						}
+					}
+				}
 			} else {
 				std::cout << "My CC: 收到无效速率 " << rate_mbps << "，保持原速率" << std::endl;
 			}
