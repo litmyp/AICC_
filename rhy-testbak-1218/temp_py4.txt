@@ -1,0 +1,348 @@
+模型文件不存在: ./models/ddpg_model_final.pth，将使用新初始化的模型继续训练
+[推理前] Episode 1, Step 1 - Actor参数: mean=-0.000005, std=0.057634, min=-0.705287, max=0.706324
+[推理前] Episode 1, Step 1 - Critic参数: mean=0.000523, std=0.054534, min=-0.577228, max=0.576581
+======当前node_id是: 2, 当前sequence是: 1
+======当前state是: [4176.    0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=2, sequence=1, timestamp_ns=4000005436)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [4176.    0.], [-100.], -0.00041759999999999996, [4176.    0.], False
+======当前node_id是: 2, 当前sequence是: 2
+======当前state是: [4176.    0.], 当前action是: [-92.6954987]
+推理得到的action是: [-92.6954987] Gbps (node_id=2, sequence=2, timestamp_ns=4000006780)
+转换后的rate是: -92.69549870319274 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [4176.    0.], [-92.6954987], -0.00041759999999999996, [4176.    0.], False
+======当前node_id是: 2, 当前sequence是: 3
+======当前state是: [4176.    0.], 当前action是: [-91.87360852]
+推理得到的action是: [-91.87360852] Gbps (node_id=2, sequence=3, timestamp_ns=4000008124)
+转换后的rate是: -91.87360851593063 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 3, 当前sequence是: 1
+======当前state是: [4176.    0.], 当前action是: [-95.20670916]
+推理得到的action是: [-95.20670916] Gbps (node_id=3, sequence=1, timestamp_ns=6000005436)
+转换后的rate是: -95.20670915635783 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [4176.    0.], [-95.20670916], -0.00041759999999999996, [4176.    0.], False
+======当前node_id是: 3, 当前sequence是: 2
+======当前state是: [4176.    0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=3, sequence=2, timestamp_ns=6000006780)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [4176.    0.], [-100.], -0.00041759999999999996, [4176.    0.], False
+======当前node_id是: 3, 当前sequence是: 3
+======当前state是: [4176.    0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=3, sequence=3, timestamp_ns=6000008124)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 4, 当前sequence是: 1
+======当前state是: [4176.    0.], 当前action是: [-82.91945519]
+推理得到的action是: [-82.91945519] Gbps (node_id=4, sequence=1, timestamp_ns=8000005436)
+转换后的rate是: -82.91945519305347 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [4176.    0.], [-82.91945519], -0.00041759999999999996, [4176.    0.], False
+======当前node_id是: 4, 当前sequence是: 2
+======当前state是: [4176.    0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=4, sequence=2, timestamp_ns=8000006780)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [4176.    0.], [-100.], -0.00041759999999999996, [4176.    0.], False
+======当前node_id是: 4, 当前sequence是: 3
+======当前state是: [4176.    0.], 当前action是: [-85.21528137]
+推理得到的action是: [-85.21528137] Gbps (node_id=4, sequence=3, timestamp_ns=8000008124)
+转换后的rate是: -85.21528137302703 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 5, 当前sequence是: 1
+======当前state是: [15516.     0.], 当前action是: [-99.67465368]
+推理得到的action是: [-99.67465368] Gbps (node_id=5, sequence=1, timestamp_ns=10000016776)
+转换后的rate是: -99.6746536823182 Gbps
+限制后的rate是: 1.0 Gbps
+回放池中样本数量不足，直接返回
+======当前node_id是: 6, 当前sequence是: 1
+======当前state是: [15600.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=6, sequence=1, timestamp_ns=10000016860)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 7, 当前sequence是: 1
+======当前state是: [15684.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=7, sequence=1, timestamp_ns=10000016944)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 8, 当前sequence是: 1
+======当前state是: [15768.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=8, sequence=1, timestamp_ns=10000017028)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 9, 当前sequence是: 1
+======当前state是: [15852.     0.], 当前action是: [-92.61234171]
+推理得到的action是: [-92.61234171] Gbps (node_id=9, sequence=1, timestamp_ns=10000017112)
+转换后的rate是: -92.61234170577863 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 10, 当前sequence是: 1
+======当前state是: [15936.     0.], 当前action是: [-94.10423299]
+推理得到的action是: [-94.10423299] Gbps (node_id=10, sequence=1, timestamp_ns=10000017196)
+转换后的rate是: -94.10423299150305 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 11, 当前sequence是: 1
+======当前state是: [16020.     0.], 当前action是: [-92.4991666]
+推理得到的action是: [-92.4991666] Gbps (node_id=11, sequence=1, timestamp_ns=10000017280)
+转换后的rate是: -92.49916659698863 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 12, 当前sequence是: 1
+======当前state是: [16104.     0.], 当前action是: [-94.73598317]
+推理得到的action是: [-94.73598317] Gbps (node_id=12, sequence=1, timestamp_ns=10000017364)
+转换后的rate是: -94.73598316736043 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 13, 当前sequence是: 1
+======当前state是: [16188.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=13, sequence=1, timestamp_ns=10000017448)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 14, 当前sequence是: 1
+======当前state是: [16272.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=14, sequence=1, timestamp_ns=10000017532)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [15516.     0.], [-99.67465368], -0.0027611999999999997, [27612.     0.], False
+======当前node_id是: 5, 当前sequence是: 2
+======当前state是: [27612.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=5, sequence=2, timestamp_ns=10000030216)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [15600.     0.], [-100.], -0.0027695999999999997, [27696.     0.], False
+回放池中样本数量不足，直接返回
+======当前node_id是: 6, 当前sequence是: 2
+======当前state是: [27696.     0.], 当前action是: [-76.73003472]
+推理得到的action是: [-76.73003472] Gbps (node_id=6, sequence=2, timestamp_ns=10000030300)
+转换后的rate是: -76.73003472028145 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [15684.     0.], [-100.], -0.002778, [27780.     0.], False
+======当前node_id是: 7, 当前sequence是: 2
+======当前state是: [27780.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=7, sequence=2, timestamp_ns=10000030384)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [15768.     0.], [-100.], -0.0027864, [27864.     0.], False
+======当前node_id是: 8, 当前sequence是: 2
+======当前state是: [27864.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=8, sequence=2, timestamp_ns=10000030468)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [15852.     0.], [-92.61234171], -0.0027948, [27948.     0.], False
+======当前node_id是: 9, 当前sequence是: 2
+======当前state是: [27948.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=9, sequence=2, timestamp_ns=10000030552)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [15936.     0.], [-94.10423299], -0.0028032, [28032.     0.], False
+======当前node_id是: 10, 当前sequence是: 2
+======当前state是: [28032.     0.], 当前action是: [-86.84674883]
+推理得到的action是: [-86.84674883] Gbps (node_id=10, sequence=2, timestamp_ns=10000030636)
+转换后的rate是: -86.84674882966563 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [16020.     0.], [-92.4991666], -0.0028116, [28116.     0.], False
+======当前node_id是: 11, 当前sequence是: 2
+======当前state是: [28116.     0.], 当前action是: [-83.74438556]
+推理得到的action是: [-83.74438556] Gbps (node_id=11, sequence=2, timestamp_ns=10000030720)
+转换后的rate是: -83.7443855630934 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [16104.     0.], [-94.73598317], -0.00282, [28200.     0.], False
+======当前node_id是: 12, 当前sequence是: 2
+======当前state是: [28200.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=12, sequence=2, timestamp_ns=10000030804)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [16188.     0.], [-100.], -0.0028284, [28284.     0.], False
+======当前node_id是: 13, 当前sequence是: 2
+======当前state是: [28284.     0.], 当前action是: [-89.79232533]
+推理得到的action是: [-89.79232533] Gbps (node_id=13, sequence=2, timestamp_ns=10000030888)
+转换后的rate是: -89.7923253343127 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [16272.     0.], [-100.], -0.0028368, [28368.     0.], False
+======当前node_id是: 14, 当前sequence是: 2
+======当前state是: [28368.     0.], 当前action是: [-97.60126067]
+推理得到的action是: [-97.60126067] Gbps (node_id=14, sequence=2, timestamp_ns=10000030972)
+转换后的rate是: -97.60126067026535 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [27612.     0.], [-100.], -0.0039708, [39708.     0.], False
+======当前node_id是: 5, 当前sequence是: 3
+======当前state是: [39708.     0.], 当前action是: [-88.03689518]
+推理得到的action是: [-88.03689518] Gbps (node_id=5, sequence=3, timestamp_ns=10000043656)
+转换后的rate是: -88.03689518023441 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [27696.     0.], [-76.73003472], -0.0039792, [39792.     0.], False
+回放池中样本数量不足，直接返回
+======当前node_id是: 6, 当前sequence是: 3
+======当前state是: [39792.     0.], 当前action是: [-94.83649332]
+推理得到的action是: [-94.83649332] Gbps (node_id=6, sequence=3, timestamp_ns=10000043740)
+转换后的rate是: -94.83649332470999 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [27780.     0.], [-100.], -0.0039876, [39876.     0.], False
+======当前node_id是: 7, 当前sequence是: 3
+======当前state是: [39876.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=7, sequence=3, timestamp_ns=10000043824)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [27864.     0.], [-100.], -0.0039959999999999996, [39960.     0.], False
+======当前node_id是: 8, 当前sequence是: 3
+======当前state是: [39960.     0.], 当前action是: [-90.01323795]
+推理得到的action是: [-90.01323795] Gbps (node_id=8, sequence=3, timestamp_ns=10000043908)
+转换后的rate是: -90.01323794981903 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [27948.     0.], [-100.], -0.0040044, [40044.     0.], False
+======当前node_id是: 9, 当前sequence是: 3
+======当前state是: [40044.     0.], 当前action是: [-80.04134947]
+推理得到的action是: [-80.04134947] Gbps (node_id=9, sequence=3, timestamp_ns=10000043992)
+转换后的rate是: -80.04134947396568 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [28032.     0.], [-86.84674883], -0.0040127999999999995, [40128.     0.], False
+======当前node_id是: 10, 当前sequence是: 3
+======当前state是: [40128.     0.], 当前action是: [-98.99306916]
+推理得到的action是: [-98.99306916] Gbps (node_id=10, sequence=3, timestamp_ns=10000044076)
+转换后的rate是: -98.99306915968191 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [28116.     0.], [-83.74438556], -0.0040212, [40212.     0.], False
+======当前node_id是: 11, 当前sequence是: 3
+======当前state是: [40212.     0.], 当前action是: [-95.48592281]
+推理得到的action是: [-95.48592281] Gbps (node_id=11, sequence=3, timestamp_ns=10000044160)
+转换后的rate是: -95.48592280584309 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [28200.     0.], [-100.], -0.0040295999999999995, [40296.     0.], False
+======当前node_id是: 12, 当前sequence是: 3
+======当前state是: [40296.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=12, sequence=3, timestamp_ns=10000044244)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [28284.     0.], [-89.79232533], -0.004038, [40380.     0.], False
+======当前node_id是: 13, 当前sequence是: 3
+======当前state是: [40380.     0.], 当前action是: [-91.21081846]
+推理得到的action是: [-91.21081846] Gbps (node_id=13, sequence=3, timestamp_ns=10000044328)
+转换后的rate是: -91.21081845566505 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [28368.     0.], [-97.60126067], -0.0040463999999999995, [40464.     0.], False
+======当前node_id是: 14, 当前sequence是: 3
+======当前state是: [40464.     0.], 当前action是: [-84.95776518]
+推理得到的action是: [-84.95776518] Gbps (node_id=14, sequence=3, timestamp_ns=10000044412)
+转换后的rate是: -84.95776517583441 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 15, 当前sequence是: 1
+======当前state是: [11736.     0.], 当前action是: [-94.15070854]
+推理得到的action是: [-94.15070854] Gbps (node_id=15, sequence=1, timestamp_ns=12000012996)
+转换后的rate是: -94.15070853642551 Gbps
+限制后的rate是: 1.0 Gbps
+回放池中样本数量不足，直接返回
+======当前node_id是: 16, 当前sequence是: 1
+======当前state是: [11820.     0.], 当前action是: [-97.67970268]
+推理得到的action是: [-97.67970268] Gbps (node_id=16, sequence=1, timestamp_ns=12000013080)
+转换后的rate是: -97.67970268397416 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 17, 当前sequence是: 1
+======当前state是: [11904.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=17, sequence=1, timestamp_ns=12000013164)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 18, 当前sequence是: 1
+======当前state是: [11988.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=18, sequence=1, timestamp_ns=12000013248)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 19, 当前sequence是: 1
+======当前state是: [12072.     0.], 当前action是: [-98.61125559]
+推理得到的action是: [-98.61125559] Gbps (node_id=19, sequence=1, timestamp_ns=12000013332)
+转换后的rate是: -98.61125559231218 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 20, 当前sequence是: 1
+======当前state是: [12156.     0.], 当前action是: [-89.46081785]
+推理得到的action是: [-89.46081785] Gbps (node_id=20, sequence=1, timestamp_ns=12000013416)
+转换后的rate是: -89.46081785280809 Gbps
+限制后的rate是: 1.0 Gbps
+======当前node_id是: 21, 当前sequence是: 1
+======当前state是: [12240.     0.], 当前action是: [-80.34814496]
+推理得到的action是: [-80.34814496] Gbps (node_id=21, sequence=1, timestamp_ns=12000013500)
+转换后的rate是: -80.34814495832374 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [11736.     0.], [-94.15070854], -0.00198, [19800.     0.], False
+======当前node_id是: 15, 当前sequence是: 2
+======当前state是: [19800.     0.], 当前action是: [-89.9224965]
+推理得到的action是: [-89.9224965] Gbps (node_id=15, sequence=2, timestamp_ns=12000022404)
+转换后的rate是: -89.92249649805285 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [11820.     0.], [-97.67970268], -0.0019884, [19884.     0.], False
+======当前node_id是: 16, 当前sequence是: 2
+======当前state是: [19884.     0.], 当前action是: [-97.44893994]
+推理得到的action是: [-97.44893994] Gbps (node_id=16, sequence=2, timestamp_ns=12000022488)
+转换后的rate是: -97.44893993898641 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [11904.     0.], [-100.], -0.0019968, [19968.     0.], False
+======当前node_id是: 17, 当前sequence是: 2
+======当前state是: [19968.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=17, sequence=2, timestamp_ns=12000022572)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [11988.     0.], [-100.], -0.0020052, [20052.     0.], False
+======当前node_id是: 18, 当前sequence是: 2
+======当前state是: [20052.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=18, sequence=2, timestamp_ns=12000022656)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [12072.     0.], [-98.61125559], -0.0020136, [20136.     0.], False
+回放池中样本数量不足，直接返回
+======当前node_id是: 19, 当前sequence是: 2
+======当前state是: [20136.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=19, sequence=2, timestamp_ns=12000022740)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [12156.     0.], [-89.46081785], -0.002022, [20220.     0.], False
+======当前node_id是: 20, 当前sequence是: 2
+======当前state是: [20220.     0.], 当前action是: [-93.19526398]
+推理得到的action是: [-93.19526398] Gbps (node_id=20, sequence=2, timestamp_ns=12000022824)
+转换后的rate是: -93.19526398071974 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [12240.     0.], [-80.34814496], -0.0020304, [20304.     0.], False
+======当前node_id是: 21, 当前sequence是: 2
+======当前state是: [20304.     0.], 当前action是: [-97.80309091]
+推理得到的action是: [-97.80309091] Gbps (node_id=21, sequence=2, timestamp_ns=12000022908)
+转换后的rate是: -97.80309091327987 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [19800.     0.], [-89.9224965], -0.0027864, [27864.     0.], False
+======当前node_id是: 15, 当前sequence是: 3
+======当前state是: [27864.     0.], 当前action是: [-85.32117188]
+推理得到的action是: [-85.32117188] Gbps (node_id=15, sequence=3, timestamp_ns=12000031812)
+转换后的rate是: -85.32117188479303 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [19884.     0.], [-97.44893994], -0.0027948, [27948.     0.], False
+======当前node_id是: 16, 当前sequence是: 3
+======当前state是: [27948.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=16, sequence=3, timestamp_ns=12000031896)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [19968.     0.], [-100.], -0.0028032, [28032.     0.], False
+======当前node_id是: 17, 当前sequence是: 3
+======当前state是: [28032.     0.], 当前action是: [-88.74381051]
+推理得到的action是: [-88.74381051] Gbps (node_id=17, sequence=3, timestamp_ns=12000031980)
+转换后的rate是: -88.74381050664648 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [20052.     0.], [-100.], -0.0028116, [28116.     0.], False
+======当前node_id是: 18, 当前sequence是: 3
+======当前state是: [28116.     0.], 当前action是: [-83.56118993]
+推理得到的action是: [-83.56118993] Gbps (node_id=18, sequence=3, timestamp_ns=12000032064)
+转换后的rate是: -83.56118992748566 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [20136.     0.], [-100.], -0.00282, [28200.     0.], False
+======当前node_id是: 19, 当前sequence是: 3
+======当前state是: [28200.     0.], 当前action是: [-94.39230351]
+推理得到的action是: [-94.39230351] Gbps (node_id=19, sequence=3, timestamp_ns=12000032148)
+转换后的rate是: -94.39230351254072 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [20220.     0.], [-93.19526398], -0.0028284, [28284.     0.], False
+======当前node_id是: 20, 当前sequence是: 3
+======当前state是: [28284.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=20, sequence=3, timestamp_ns=12000032232)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
+======添加到回放池中: [20304.     0.], [-97.80309091], -0.0028368, [28368.     0.], False
+======当前node_id是: 21, 当前sequence是: 3
+======当前state是: [28368.     0.], 当前action是: [-100.]
+推理得到的action是: [-100.] Gbps (node_id=21, sequence=3, timestamp_ns=12000032316)
+转换后的rate是: -100.0 Gbps
+限制后的rate是: 1.0 Gbps
