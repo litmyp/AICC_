@@ -170,8 +170,11 @@ RdmaRxQueuePair::RdmaRxQueuePair(){
 	m_ipid = 0;
 	ReceiverNextExpectedSeq = 0;
 	m_nackTimer = Time(0);
-	m_milestone_rx = 0;
 	m_lastNACK = 0;
+	m_lastAckedSeq = 0;
+	m_ackFlushEvent = EventId();
+	m_hasLastIntHeader = false;
+	m_pendingEcnBits = 0;
 }
 
 uint32_t RdmaRxQueuePair::GetHash(void){

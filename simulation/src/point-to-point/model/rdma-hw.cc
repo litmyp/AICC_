@@ -14,6 +14,7 @@
 #include "cn-header.h"
 
 #include <iostream>
+#include <algorithm>
 
 #include <ns3/log.h>//lty added
 
@@ -200,6 +201,7 @@ TypeId RdmaHw::GetTypeId (void)
 }
 
 RdmaHw::RdmaHw(){
+	m_ackFlushTimeout = MicroSeconds(1);
 }
 
 RdmaHw::~RdmaHw(){
@@ -302,6 +304,9 @@ Ptr<RdmaRxQueuePair> RdmaHw::GetRxQp(uint32_t sip, uint32_t dip, uint16_t sport,
 		q->sport = sport;
 		q->dport = dport;
 		q->m_ecn_source.qIndex = pg;
+		q->m_lastAckedSeq = 0;
+		q->m_pendingEcnBits = 0;
+		q->m_hasLastIntHeader = false;
 		// store in map
 		m_rxQpMap[key] = q;
 		return q;
@@ -318,7 +323,15 @@ uint32_t RdmaHw::GetNicIdxOfRxQp(Ptr<RdmaRxQueuePair> q){
 }
 void RdmaHw::DeleteRxQp(uint32_t dip, uint16_t pg, uint16_t dport){
 	uint64_t key = ((uint64_t)dip << 32) | ((uint64_t)pg << 16) | (uint64_t)dport;
-	m_rxQpMap.erase(key);
+	auto it = m_rxQpMap.find(key);
+	if (it != m_rxQpMap.end()){
+		Ptr<RdmaRxQueuePair> q = it->second;
+		if (q->m_ackFlushEvent.IsRunning()){
+			Simulator::Cancel(q->m_ackFlushEvent);
+			q->m_ackFlushEvent = EventId();
+		}
+		m_rxQpMap.erase(it);
+	}
 }
 
 int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch){
@@ -333,99 +346,89 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch){
 		rxQp->m_ecn_source.qfb++;
 	}
 	rxQp->m_ecn_source.total++;
-	rxQp->m_milestone_rx = m_ack_interval;
+	rxQp->m_pendingEcnBits |= ecnbits;
+	rxQp->m_lastIntHeader = ch.udp.ih;
+	rxQp->m_hasLastIntHeader = true;
 
 	int x = ReceiverCheckSeq(ch.udp.seq, rxQp, payload_size);
 	switch (x){
-	case 1:	//生成ACK
-		if (kEnableRetransLogging) {
-			std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
-			          << " node=" << m_node->GetId()
-			          << " flow=" << ch.sip << "->" << ch.dip
-			          << " seq=" << ch.udp.seq
-			          << " action=ACK_TRIGGER" << std::endl;
-		}
+	case 1:
+		SendReceiverFeedback(rxQp, rxQp->ReceiverNextExpectedSeq, true, rxQp->m_pendingEcnBits != 0, ch.udp.ih);
 		break;
-	case 2:	//生成NACK，提醒重传
-		if (kEnableRetransLogging) {
-			std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
-			          << " node=" << m_node->GetId()
-			          << " flow=" << ch.sip << "->" << ch.dip
-			          << " expected=" << rxQp->ReceiverNextExpectedSeq
-			          << " received=" << ch.udp.seq
-			          << " action=NACK_TRIGGER" << std::endl;
-		}
+	case 2:
+		SendReceiverFeedback(rxQp, rxQp->ReceiverNextExpectedSeq, false, rxQp->m_pendingEcnBits != 0, ch.udp.ih);
 		break;
-	case 3:	//重复包，不触发反馈
-		if (kEnableRetransLogging) {
-			std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
-			          << " node=" << m_node->GetId()
-			          << " flow=" << ch.sip << "->" << ch.dip
-			          << " seq=" << ch.udp.seq
-			          << " action=DUPLICATE" << std::endl;
-		}
-		break;
-	case 4:	//NACK被抑制,NACK冷却或已发送同一NACK
-		if (kEnableRetransLogging) {
-			std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
-			          << " node=" << m_node->GetId()
-			          << " flow=" << ch.sip << "->" << ch.dip
-			          << " seq=" << ch.udp.seq
-			          << " action=NACK_SUPPRESSED" << std::endl;
-		}
-		break;
-	case 5:	//按顺序收到，未累积到ACK触发阈值
-		if (kEnableRetransLogging) {
-			std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
-			          << " node=" << m_node->GetId()
-			          << " flow=" << ch.sip << "->" << ch.dip
-			          << " seq=" << ch.udp.seq
-			          << " action=IN_SEQUENCE_PENDING" << std::endl;
-		}
+	case 5:
+		ScheduleAckFlush(rxQp);
 		break;
 	default:
 		break;
 	}
-	if (x == 1 || x == 2){ //generate ACK or NACK
-		//lty 用于测试修改ack生成间隔后的现象
-		 if(x==1){
-		// // 	NS_LOG_INFO("Generating ACK"
-		// // 					<< " for sequence number " << rxQp->ReceiverNextExpectedSeq
-		// // 					<< " from " << ch.sip << ":" << ch.udp.sport
-		// // 					<< " to " << ch.dip << ":" << ch.udp.dport);
-		// // }
-		// //替换：cout 
-			std::cout<<" for sequence number " << rxQp->ReceiverNextExpectedSeq<< " from " << ch.sip << ":" << ch.udp.sport<< " to " << ch.dip << ":" << ch.udp.dport<<"generate an ACK pkt"<<std::endl;
-		}
-
-		qbbHeader seqh;
-		seqh.SetSeq(rxQp->ReceiverNextExpectedSeq);
-		seqh.SetPG(ch.udp.pg);
-		seqh.SetSport(ch.udp.dport);
-		seqh.SetDport(ch.udp.sport);
-		seqh.SetIntHeader(ch.udp.ih);
-		if (ecnbits)
-			seqh.SetCnp();
-
-		Ptr<Packet> newp = Create<Packet>(std::max(60-14-20-(int)seqh.GetSerializedSize(), 0));
-		newp->AddHeader(seqh);
-
-		Ipv4Header head;	// Prepare IPv4 header
-		head.SetDestination(Ipv4Address(ch.sip));
-		head.SetSource(Ipv4Address(ch.dip));
-		head.SetProtocol(x == 1 ? 0xFC : 0xFD); //ack=0xFC nack=0xFD
-		head.SetTtl(64);
-		head.SetPayloadSize(newp->GetSize());
-		head.SetIdentification(rxQp->m_ipid++);
-
-		newp->AddHeader(head);
-		AddHeader(newp, 0x800);	// Attach PPP header
-		// send
-		uint32_t nic_idx = GetNicIdxOfRxQp(rxQp);
-		m_nic[nic_idx].dev->RdmaEnqueueHighPrioQ(newp);
-		m_nic[nic_idx].dev->TriggerTransmit();
-	}
 	return 0;
+}
+
+void RdmaHw::ScheduleAckFlush(Ptr<RdmaRxQueuePair> q){
+	if (m_ack_interval == 0){
+		return;
+	}
+	if (q->ReceiverNextExpectedSeq == q->m_lastAckedSeq){
+		return;
+	}
+	if (q->m_ackFlushEvent.IsRunning()){
+		Simulator::Cancel(q->m_ackFlushEvent);
+	}
+	q->m_ackFlushEvent = Simulator::Schedule(m_ackFlushTimeout, &RdmaHw::HandleAckFlushTimeout, this, q);
+}
+
+void RdmaHw::HandleAckFlushTimeout(Ptr<RdmaRxQueuePair> q){
+	// Timeout ensures the final bytes are acknowledged even when the interval threshold is not met.
+	q->m_ackFlushEvent = EventId();
+	if (q->ReceiverNextExpectedSeq == q->m_lastAckedSeq){
+		return;
+	}
+	IntHeader ih = q->m_hasLastIntHeader ? q->m_lastIntHeader : IntHeader();
+	SendReceiverFeedback(q, q->ReceiverNextExpectedSeq, true, q->m_pendingEcnBits != 0, ih);
+}
+
+void RdmaHw::SendReceiverFeedback(Ptr<RdmaRxQueuePair> q, uint32_t seq, bool isAck, bool setCnp, const IntHeader &ih){
+	// Helper emits ACK/NACK packets while resetting receiver bookkeeping for the next aggregation window.
+	if (q->m_ackFlushEvent.IsRunning()){
+		Simulator::Cancel(q->m_ackFlushEvent);
+	}
+	q->m_ackFlushEvent = EventId();
+
+	qbbHeader seqh;
+	seqh.SetSeq(seq);
+	seqh.SetPG(q->m_ecn_source.qIndex);
+	seqh.SetSport(q->sport);
+	seqh.SetDport(q->dport);
+	seqh.SetIntHeader(ih);
+	if (setCnp){
+		seqh.SetCnp();
+	}
+
+	Ptr<Packet> newp = Create<Packet>(std::max(60-14-20-(int)seqh.GetSerializedSize(), 0));
+	newp->AddHeader(seqh);
+
+	Ipv4Header head;
+	head.SetDestination(Ipv4Address(q->dip));
+	head.SetSource(Ipv4Address(q->sip));
+	head.SetProtocol(isAck ? 0xFC : 0xFD);
+	head.SetTtl(64);
+	head.SetPayloadSize(newp->GetSize());
+	head.SetIdentification(q->m_ipid++);
+
+	newp->AddHeader(head);
+	AddHeader(newp, 0x800);
+	uint32_t nic_idx = GetNicIdxOfRxQp(q);
+	m_nic[nic_idx].dev->RdmaEnqueueHighPrioQ(newp);
+	m_nic[nic_idx].dev->TriggerTransmit();
+
+	if (isAck){
+		q->m_lastAckedSeq = seq;
+	}
+	q->m_pendingEcnBits = 0;
+	q->m_hasLastIntHeader = false;
 }
 
 int RdmaHw::ReceiveCnp(Ptr<Packet> p, CustomHeader &ch){
@@ -564,45 +567,24 @@ int RdmaHw::Receive(Ptr<Packet> p, CustomHeader &ch){
 
 int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size){
 	uint32_t expected = q->ReceiverNextExpectedSeq;
-	//lty
-	//std::cout<<"execute ReceiverCHeckSeq function"<<std::endl;
 	if (seq == expected){
 		q->ReceiverNextExpectedSeq = expected + size;
-		//lty
-		//std::cout<<"before plus m_milestone_rx=="<<q->m_milestone_rx<<std::endl;
-		//if (q->ReceiverNextExpectedSeq >= q->m_milestone_rx){
-		if (q->ReceiverNextExpectedSeq % q->m_milestone_rx == 0){
-			q->m_milestone_rx += m_ack_interval;
-			//lty
-			std::cout<<"m_ack_interval=="<<m_ack_interval<<std::endl;
-			std::cout<<"m_milestone_rx=="<<q->m_milestone_rx<<std::endl;
-			std::cout<<"q->receiverExpectedSeq"<<q->ReceiverNextExpectedSeq<<std::endl;
-			return 1; //Generate ACK
-		// lty
-		// }else if (q->ReceiverNextExpectedSeq % m_chunk == 0){
-		// 	std::cout<<"m_chunk"<<std::endl;
-		// 	return 1;
-		}else {
-			//std::cout<<"return 5"<<std::endl;
-			return 5;
+		uint32_t bytesSinceAck = q->ReceiverNextExpectedSeq - q->m_lastAckedSeq;
+		if (m_ack_interval == 0 || bytesSinceAck >= m_ack_interval){
+			return 1;
 		}
+		return 5;
 	} else if (seq > expected) {
-		//lty
-		std::cout<<"goto nack branch"<<std::endl;
-		// Generate NACK
 		if (Simulator::Now() >= q->m_nackTimer || q->m_lastNACK != expected){
 			q->m_nackTimer = Simulator::Now() + MicroSeconds(m_nack_interval);
 			q->m_lastNACK = expected;
-			if (m_backto0){
-				q->ReceiverNextExpectedSeq = q->ReceiverNextExpectedSeq / m_chunk*m_chunk;
+			if (m_backto0 && m_chunk != 0){
+				q->ReceiverNextExpectedSeq = (q->ReceiverNextExpectedSeq / m_chunk) * m_chunk;
 			}
 			return 2;
-		}else
-			return 4;
+		}
+		return 4;
 	}else {
-		//lty
-		std::cout<<"goto else branch"<<std::endl;
-		// Duplicate. 
 		return 3;
 	}
 }

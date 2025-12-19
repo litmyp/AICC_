@@ -117,9 +117,13 @@ public:
 	uint16_t m_ipid;
 	uint32_t ReceiverNextExpectedSeq;
 	Time m_nackTimer;
-	int32_t m_milestone_rx;
 	uint32_t m_lastNACK;
 	EventId QcnTimerEvent; // if destroy this rxQp, remember to cancel this timer
+	EventId m_ackFlushEvent;
+	uint32_t m_lastAckedSeq;
+	IntHeader m_lastIntHeader;
+	bool m_hasLastIntHeader;
+	uint8_t m_pendingEcnBits;
 
 	static TypeId GetTypeId (void);
 	RdmaRxQueuePair();
