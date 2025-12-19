@@ -33,6 +33,7 @@ namespace ns3{
 namespace {
 	// Tracks QPs that already emitted a minimum-rate warning to avoid repetitive logs.
 	std::unordered_set<uint32_t> g_minRateWarningIssued;
+	const bool kEnableRetransLogging = false;
 }
 
 TypeId RdmaHw::GetTypeId (void)
@@ -337,40 +338,50 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch){
 	int x = ReceiverCheckSeq(ch.udp.seq, rxQp, payload_size);
 	switch (x){
 	case 1:	//生成ACK
-		std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
-		          << " node=" << m_node->GetId()
-		          << " flow=" << ch.sip << "->" << ch.dip
-		          << " seq=" << ch.udp.seq
-		          << " action=ACK_TRIGGER" << std::endl;
+		if (kEnableRetransLogging) {
+			std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
+			          << " node=" << m_node->GetId()
+			          << " flow=" << ch.sip << "->" << ch.dip
+			          << " seq=" << ch.udp.seq
+			          << " action=ACK_TRIGGER" << std::endl;
+		}
 		break;
 	case 2:	//生成NACK，提醒重传
-		std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
-		          << " node=" << m_node->GetId()
-		          << " flow=" << ch.sip << "->" << ch.dip
-		          << " expected=" << rxQp->ReceiverNextExpectedSeq
-		          << " received=" << ch.udp.seq
-		          << " action=NACK_TRIGGER" << std::endl;
+		if (kEnableRetransLogging) {
+			std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
+			          << " node=" << m_node->GetId()
+			          << " flow=" << ch.sip << "->" << ch.dip
+			          << " expected=" << rxQp->ReceiverNextExpectedSeq
+			          << " received=" << ch.udp.seq
+			          << " action=NACK_TRIGGER" << std::endl;
+		}
 		break;
 	case 3:	//重复包，不触发反馈
-		std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
-		          << " node=" << m_node->GetId()
-		          << " flow=" << ch.sip << "->" << ch.dip
-		          << " seq=" << ch.udp.seq
-		          << " action=DUPLICATE" << std::endl;
+		if (kEnableRetransLogging) {
+			std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
+			          << " node=" << m_node->GetId()
+			          << " flow=" << ch.sip << "->" << ch.dip
+			          << " seq=" << ch.udp.seq
+			          << " action=DUPLICATE" << std::endl;
+		}
 		break;
 	case 4:	//NACK被抑制,NACK冷却或已发送同一NACK
-		std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
-		          << " node=" << m_node->GetId()
-		          << " flow=" << ch.sip << "->" << ch.dip
-		          << " seq=" << ch.udp.seq
-		          << " action=NACK_SUPPRESSED" << std::endl;
+		if (kEnableRetransLogging) {
+			std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
+			          << " node=" << m_node->GetId()
+			          << " flow=" << ch.sip << "->" << ch.dip
+			          << " seq=" << ch.udp.seq
+			          << " action=NACK_SUPPRESSED" << std::endl;
+		}
 		break;
 	case 5:	//按顺序收到，未累积到ACK触发阈值
-		std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
-		          << " node=" << m_node->GetId()
-		          << " flow=" << ch.sip << "->" << ch.dip
-		          << " seq=" << ch.udp.seq
-		          << " action=IN_SEQUENCE_PENDING" << std::endl;
+		if (kEnableRetransLogging) {
+			std::cout << "[Retrans][ReceiveUdp] time=" << Simulator::Now().GetTimeStep()
+			          << " node=" << m_node->GetId()
+			          << " flow=" << ch.sip << "->" << ch.dip
+			          << " seq=" << ch.udp.seq
+			          << " action=IN_SEQUENCE_PENDING" << std::endl;
+		}
 		break;
 	default:
 		break;
@@ -472,13 +483,15 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch){
 		std::cout << "ERROR: " << "node:" << m_node->GetId() << ' ' << (ch.l3Prot == 0xFC ? "ACK" : "NACK") << " NIC cannot find the flow\n";
 		return 0;
 	}
-	std::cout << "[Retrans][ReceiveAck] time=" << Simulator::Now().GetTimeStep()
-	          << " node=" << m_node->GetId()
-	          << " flow=" << ch.sip << "->" << ch.dip
-	          << " type=" << (ch.l3Prot == 0xFD ? "NACK" : "ACK")	//确认类型
-	          << " seq=" << seq	//确认序号
-	          << " snd_una_before=" << qp->snd_una	//发送未确认序号
-	          << std::endl;
+	if (kEnableRetransLogging) {
+		std::cout << "[Retrans][ReceiveAck] time=" << Simulator::Now().GetTimeStep()
+		          << " node=" << m_node->GetId()
+		          << " flow=" << ch.sip << "->" << ch.dip
+		          << " type=" << (ch.l3Prot == 0xFD ? "NACK" : "ACK")	//确认类型
+		          << " seq=" << seq	//确认序号
+		          << " snd_una_before=" << qp->snd_una	//发送未确认序号
+		          << std::endl;
+	}
 
 	uint32_t nic_idx = GetNicIdxOfQp(qp);
 	Ptr<QbbNetDevice> dev = m_nic[nic_idx].dev;
@@ -491,21 +504,25 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch){
 			uint32_t goback_seq = seq / m_chunk * m_chunk;
 			qp->Acknowledge(goback_seq);
 		}
-		std::cout << "[Retrans][ReceiveAck] time=" << Simulator::Now().GetTimeStep()
-		          << " node=" << m_node->GetId()
-		          << " flow=" << ch.sip << "->" << ch.dip
-		          << " snd_una_after=" << qp->snd_una	//发送未确认序号
-		          << std::endl;
+		if (kEnableRetransLogging) {
+			std::cout << "[Retrans][ReceiveAck] time=" << Simulator::Now().GetTimeStep()
+			          << " node=" << m_node->GetId()
+			          << " flow=" << ch.sip << "->" << ch.dip
+			          << " snd_una_after=" << qp->snd_una	//发送未确认序号
+			          << std::endl;
+		}
 		if (qp->IsFinished()){
 			QpComplete(qp);
 		}
 	}
 	if (ch.l3Prot == 0xFD) // NACK
 	{
-		std::cout << "[Retrans][ReceiveAck] time=" << Simulator::Now().GetTimeStep()
-		          << " node=" << m_node->GetId()
-		          << " flow=" << ch.sip << "->" << ch.dip
-		          << " trigger=RECOVER_QUEUE" << std::endl;
+		if (kEnableRetransLogging) {
+			std::cout << "[Retrans][ReceiveAck] time=" << Simulator::Now().GetTimeStep()
+			          << " node=" << m_node->GetId()
+			          << " flow=" << ch.sip << "->" << ch.dip
+			          << " trigger=RECOVER_QUEUE" << std::endl;
+		}
 		RecoverQueue(qp);	//进入重传逻辑
 	}
 
@@ -548,11 +565,11 @@ int RdmaHw::Receive(Ptr<Packet> p, CustomHeader &ch){
 int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size){
 	uint32_t expected = q->ReceiverNextExpectedSeq;
 	//lty
-	std::cout<<"execute ReceiverCHeckSeq function"<<std::endl;
+	//std::cout<<"execute ReceiverCHeckSeq function"<<std::endl;
 	if (seq == expected){
 		q->ReceiverNextExpectedSeq = expected + size;
 		//lty
-		std::cout<<"before plus m_milestone_rx=="<<q->m_milestone_rx<<std::endl;
+		//std::cout<<"before plus m_milestone_rx=="<<q->m_milestone_rx<<std::endl;
 		//if (q->ReceiverNextExpectedSeq >= q->m_milestone_rx){
 		if (q->ReceiverNextExpectedSeq % q->m_milestone_rx == 0){
 			q->m_milestone_rx += m_ack_interval;
@@ -566,7 +583,7 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
 		// 	std::cout<<"m_chunk"<<std::endl;
 		// 	return 1;
 		}else {
-			std::cout<<"return 5"<<std::endl;
+			//std::cout<<"return 5"<<std::endl;
 			return 5;
 		}
 	} else if (seq > expected) {
@@ -604,12 +621,14 @@ uint16_t RdmaHw::EtherToPpp (uint16_t proto){
 }
 
 void RdmaHw::RecoverQueue(Ptr<RdmaQueuePair> qp){
-	std::cout << "[Retrans][RecoverQueue] time=" << Simulator::Now().GetTimeStep()
-	          << " node=" << m_node->GetId()
-	          << " flow=" << qp->sip << "->" << qp->dip
-	          << " snd_una=" << qp->snd_una
-	          << " snd_nxt_before=" << qp->snd_nxt
-	          << " -> reset" << std::endl;
+	if (kEnableRetransLogging) {
+		std::cout << "[Retrans][RecoverQueue] time=" << Simulator::Now().GetTimeStep()
+		          << " node=" << m_node->GetId()
+		          << " flow=" << qp->sip << "->" << qp->dip
+		          << " snd_una=" << qp->snd_una
+		          << " snd_nxt_before=" << qp->snd_nxt
+		          << " -> reset" << std::endl;
+	}
 	qp->snd_nxt = qp->snd_una;
 }
 
