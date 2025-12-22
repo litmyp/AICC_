@@ -161,6 +161,7 @@ uint32_t ip_to_node_id(Ipv4Address ip){
 }
 
 void qp_finish(FILE* fout, Ptr<RdmaQueuePair> q){
+	std::cout << "lty print: execute qp_finish()" << std::endl; //lty added
 	uint32_t sid = ip_to_node_id(q->sip), did = ip_to_node_id(q->dip);
 	uint64_t base_rtt = pairRtt[sid][did], b = pairBw[sid][did];
 	uint32_t total_bytes = q->m_size + ((q->m_size-1) / packet_payload_size + 1) * (CustomHeader::GetStaticWholeHeaderSize() - IntHeader::GetStaticSize()); // translate to the minimum bytes required (with header but no INT)
@@ -680,6 +681,10 @@ int main(int argc, char *argv[])
 		IntHeader::mode = IntHeader::PINT;
 	else if (cc_mode == 16) // lty's AICC
 		IntHeader::mode = IntHeader::TS;	
+	else if (cc_mode == 17){ // lty debugging
+		IntHeader::mode = IntHeader::TS;
+		std::cout<<"lty debugging mode"<<std::endl;
+	}
 	else // others, no extra header
 		IntHeader::mode = IntHeader::NONE;
 

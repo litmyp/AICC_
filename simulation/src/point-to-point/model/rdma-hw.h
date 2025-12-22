@@ -205,6 +205,8 @@ public:
 	 * My Custom CC Algorithm
 	 ********************/
 	void HandleAckMySelf(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
+	void HandleAckDebug(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
+	
 	void ReadRate();
 
 };

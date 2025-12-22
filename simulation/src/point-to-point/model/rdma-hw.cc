@@ -461,6 +461,9 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch){
 	}else if (m_cc_mode == 16){//lty
 		HandleAckMySelf(qp, p, ch);
 	}
+	else if(m_cc_mode == 17){
+		HandleAckDebug(qp, p, ch);// lty debugging
+	}
 	// ACK may advance the on-the-fly window, allowing more packets to send
 	dev->TriggerTransmit();
 	return 0;
@@ -1219,6 +1222,8 @@ void RdmaHw::HandleAckMySelf(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader 
 			                     qp->sip.Get(), qp->sport,
 			                     qp->dip.Get(), qp->dport,
 			                     ack_seq, rtt_ns, current_time, cnp);
+			//加一下记录
+			std::cout<<"在时刻:"<<current_time<<"执行一次对共享内存的写入"<<std::endl;
 
 			// lty: 同步阻塞式等待 Python 写入速率（方案A）
 			std::cout << "My CC: 等待Python端写入速率..." << std::endl; // lty
@@ -1266,6 +1271,59 @@ void RdmaHw::HandleAckMySelf(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader 
 	// - CNP标志（拥塞通知）：uint8_t cnp = (ch.ack.flags >> qbbHeader::FLAG_CNP) & 1;
 	// - INT header中的队列长度信息（如果使用NORMAL模式）
 	// - 序列号用于判断是否完成了一个RTT
+}
+void RdmaHw::HandleAckDebug(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch){
+	std::cout<<"Debugging 当前QP为:"<<qp->sip.Get()<<":"<<qp->sport<<" -> "<<qp->dip.Get()<<":"<<qp->dport<<"发送速率为:"<<qp->m_rate.GetBitRate()*1e-9 <<"Gb"<<std::endl;
+	
+	// 打印 rtt_ns, timestamp_ns, cnp标志位
+	uint64_t current_time = Simulator::Now().GetTimeStep(); // timestamp_ns
+	uint64_t rtt_ns = 0;
+	
+	// 从ACK中提取RTT信息（需要IntHeader::mode == TS模式）
+	if (IntHeader::mode == IntHeader::TS){
+		uint64_t tx_timestamp = ch.ack.ih.GetTs();
+		if (tx_timestamp > 0){
+			rtt_ns = current_time - tx_timestamp;
+		}
+	}
+	
+	// 提取CNP标志位
+	uint8_t cnp = (ch.ack.flags >> qbbHeader::FLAG_CNP) & 1;
+	
+	// 打印信息
+	std::cout << "  RTT: " << rtt_ns << " ns (" << rtt_ns / 1000000.0 << " ms)" << std::endl;
+	std::cout << "  Timestamp: " << current_time << " ns" << std::endl;
+	std::cout << "  CNP标志位: " << static_cast<int>(cnp) << (cnp ? " (拥塞)" : " (无拥塞)") << std::endl;
+	
+	std::cout<<"通过键盘键入接下来的发送速率(Gbps): ";
+	
+	float rate_gbps;
+	std::cin >> rate_gbps;
+	
+	if (rate_gbps > 0.0f) {
+		// 将Gbps转换为bps
+		uint64_t rate_bps = static_cast<uint64_t>(rate_gbps * 1e9); // Gbps -> bps
+		DataRate new_rate(rate_bps);
+		
+		// 检查速率范围并限制
+		if (new_rate > qp->m_max_rate) {
+			std::cout << "警告: 速率 " << rate_gbps << " Gbps 超过最大速率 " 
+			          << qp->m_max_rate.GetBitRate() * 1e-9 << " Gbps，已限制为最大速率" << std::endl;
+			new_rate = qp->m_max_rate;
+		}
+		if (new_rate < m_minRate) {
+			std::cout << "警告: 速率 " << rate_gbps << " Gbps 低于最小速率 " 
+			          << m_minRate.GetBitRate() * 1e-9 << " Gbps，已限制为最小速率" << std::endl;
+			new_rate = m_minRate;
+		}
+		
+		// 更新速率
+		std::cout << "将速率更新为 " << new_rate.GetBitRate() * 1e-9 << " Gb/s" << std::endl;
+		ChangeRate(qp, new_rate);
+		std::cout << "执行速率变更，更新后的速率为: " << qp->m_rate.GetBitRate() * 1e-9 << " Gb" << std::endl;
+	} else {
+		std::cout << "无效速率 " << rate_gbps << " Gbps，保持原速率" << std::endl;
+	}
 }
 
 // lty: ShmManager静态成员定义
@@ -1326,9 +1384,8 @@ void ShmManager::WriteRtt(uint32_t node_id, uint32_t sip, uint16_t sport,
 	data->dport = dport;
 	data->ack_seq = ack_seq;
 	data->rtt_ns = rtt_ns;
-	data->timestamp_ns = timestamp_ns;
 	data->cnp = cnp;
-
+	data->timestamp_ns = timestamp_ns;
 	// lty: 更新序列号（针对每个node_id单独计数）
 	// 获取或创建该node_id的计数器，然后递增
 	uint64_t seq;
