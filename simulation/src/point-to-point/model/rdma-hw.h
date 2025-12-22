@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include "pint.h"
 #include <ns3/nstime.h>
+#include <fstream>
 
 // lty: 共享内存相关头文件
 #include <atomic>
@@ -211,6 +212,15 @@ public:
 	 ********************/
 	void HandleAckMySelf(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
 	void ReadRate();
+
+	void SetFlowRateTraceFile(const std::string &filePath);
+	void TraceFlowRate(Ptr<RdmaQueuePair> qp, const std::string &tag);
+
+private:
+	void EnsureFlowRateTraceReady();
+	std::string m_flowRateTracePath;
+	bool m_flowRateTraceEnabled;
+	std::ofstream m_flowRateStream;
 
 };
 

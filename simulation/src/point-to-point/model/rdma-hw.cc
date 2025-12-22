@@ -27,6 +27,8 @@
 #include <thread>
 #include <chrono>
 #include <unordered_set>
+// 定义当前模块的日志组件名称，便于使用 NS_LOG 输出调试信息
+NS_LOG_COMPONENT_DEFINE("RdmaHw");
 
 
 namespace ns3{
@@ -200,17 +202,31 @@ TypeId RdmaHw::GetTypeId (void)
 	return tid;
 }
 
-RdmaHw::RdmaHw(){
-	m_ackFlushTimeout = MicroSeconds(1);
+// 构造函数，初始化速率追踪相关开关并设置缺省 ACK 刷新延迟
+RdmaHw::RdmaHw()
+	: m_flowRateTracePath("")          // 默认不写入速率追踪文件
+	, m_flowRateTraceEnabled(false)    // 关闭速率追踪功能
+{
+	m_ackFlushTimeout = MicroSeconds(1); // 缺省将 ACK 聚合刷新定时器设为 1 微秒
 }
 
+// 确保硬件对象销毁时关闭速率跟踪文件流。
 RdmaHw::~RdmaHw(){
-
+	if (m_flowRateStream.is_open()){
+		m_flowRateStream.close();
+	}
 }
-
+/**
+ * SetNode 的作用是把 RdmaHw 实例与给定的 Node 对象关联起来，
+ * 然后立即调用 EnsureFlowRateTraceReady() 预先准备速率跟踪文件，
+ * 避免第一次需要写入追踪数据时才去创建文件导致的延迟。
+ */
 void RdmaHw::SetNode(Ptr<Node> node){
 	m_node = node;
+	// 节点绑定后即可准备速率跟踪文件，避免第一次调用时延迟打开
+	EnsureFlowRateTraceReady();
 }
+
 void RdmaHw::Setup(QpCompleteCallback cb){
 	for (uint32_t i = 0; i < m_nic.size(); i++){
 		Ptr<QbbNetDevice> dev = m_nic[i].dev;
@@ -227,6 +243,76 @@ void RdmaHw::Setup(QpCompleteCallback cb){
 	}
 	// setup qp complete callback
 	m_qpCompleteCallback = cb;
+}
+
+// 负责配置速率追踪CSV文件.
+void RdmaHw::SetFlowRateTraceFile(const std::string &filePath){
+	// 设置速率追踪文件路径
+	m_flowRateTracePath = filePath;
+	// 路径非空时启用速率追踪
+	m_flowRateTraceEnabled = !filePath.empty();
+	// 若禁用速率追踪且文件已打开则关闭文件流
+	if (!m_flowRateTraceEnabled && m_flowRateStream.is_open()){
+		m_flowRateStream.close();
+	}
+}
+
+// 按需要打开文件并写入表头.
+void RdmaHw::EnsureFlowRateTraceReady(){
+	// 若未启用速率追踪，则无需准备文件
+	if (!m_flowRateTraceEnabled)
+		return;
+	// 路径为空则无法写入文件，发出警告并禁用追踪功能
+	if (m_flowRateTracePath.empty()){
+		NS_LOG_WARN("RdmaHw: flow rate trace enabled but no file path provided");
+		m_flowRateTraceEnabled = false;
+		return;
+	}
+	// 文件已打开则无需重复准备
+	if (m_flowRateStream.is_open())
+		return;
+	// 检查文件是否存在且非空，以决定是否需要写入表头
+	bool needHeader = false;
+	std::ifstream preview(m_flowRateTracePath.c_str(), std::ios::in);
+	if (!preview.good() || preview.peek() == std::ifstream::traits_type::eof()){
+		needHeader = true;
+	}
+	preview.close();	// 关闭预览流
+	// 打开文件流以追加方式写入
+	m_flowRateStream.open(m_flowRateTracePath.c_str(), std::ios::out | std::ios::app);
+	// 检查文件是否成功打开
+	if (!m_flowRateStream.is_open()){
+		NS_LOG_WARN("RdmaHw: failed to open flow rate trace file " << m_flowRateTracePath);
+		m_flowRateTraceEnabled = false;
+		return;
+	}
+	// 如有必要，写入CSV表头
+	if (needHeader){
+		m_flowRateStream << "time_ns,node_id,src_ip,src_port,dst_ip,dst_port,priority,rate_bps,cc_tag\n";
+		m_flowRateStream.flush();
+	}
+}
+
+// 写入带时间戳的速率样本.
+void RdmaHw::TraceFlowRate(Ptr<RdmaQueuePair> qp, const std::string &tag){
+	//若未启用速率追踪则直接返回
+	if (!m_flowRateTraceEnabled)
+		return;
+	EnsureFlowRateTraceReady();	// 确保文件已准备好
+	// 文件流未打开则无法写入，直接返回
+	if (!m_flowRateStream.is_open())
+		return;
+	// 写入一行速率数据
+	m_flowRateStream << Simulator::Now().GetTimeStep() << ','
+					<< m_node->GetId() << ','
+					<< qp->sip << ','
+					<< qp->sport << ','
+					<< qp->dip << ','
+					<< qp->dport << ','
+					<< qp->m_pg << ','
+					<< qp->m_rate.GetBitRate() << ','
+					<< tag << '\n';
+	m_flowRateStream.flush();	// 立即刷新以确保数据写入文件
 }
 
 uint32_t RdmaHw::GetNicIdxOfQp(Ptr<RdmaQueuePair> qp){
@@ -547,6 +633,10 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch){
 	}else if (m_cc_mode == 16){//lty
 		HandleAckMySelf(qp, p, ch);
 	}
+	if (m_cc_mode == 1){
+		// DCQCN路径在ACK处理后统一记录速率
+		TraceFlowRate(qp, "DCQCN");
+	}
 	// ACK may advance the on-the-fly window, allowing more packets to send
 	dev->TriggerTransmit();
 	return 0;
@@ -768,6 +858,8 @@ void RdmaHw::cnp_received_mlx(Ptr<RdmaQueuePair> q){
 		q->mlx.m_targetRate = q->m_rate = m_rateOnFirstCNP * q->m_rate;
 		q->mlx.m_first_cnp = false;
 	}
+	// 记录CNP响应后的速率，用于DCQCN曲线
+	TraceFlowRate(q, "DCQCN");
 }
 
 void RdmaHw::CheckRateDecreaseMlx(Ptr<RdmaQueuePair> q){
@@ -792,6 +884,7 @@ void RdmaHw::CheckRateDecreaseMlx(Ptr<RdmaQueuePair> q){
 		#if PRINT_LOG
 		printf("(%.3lf %.3lf)\n", q->mlx.m_targetRate.GetBitRate() * 1e-9, q->m_rate.GetBitRate() * 1e-9);
 		#endif
+		TraceFlowRate(q, "DCQCN");
 	}
 }
 void RdmaHw::ScheduleDecreaseRateMlx(Ptr<RdmaQueuePair> q, uint32_t delta){
@@ -822,6 +915,7 @@ void RdmaHw::FastRecoveryMlx(Ptr<RdmaQueuePair> q){
 	#if PRINT_LOG
 	printf("(%.3lf %.3lf)\n", q->mlx.m_targetRate.GetBitRate() * 1e-9, q->m_rate.GetBitRate() * 1e-9);
 	#endif
+	TraceFlowRate(q, "DCQCN");
 }
 void RdmaHw::ActiveIncreaseMlx(Ptr<RdmaQueuePair> q){
 	#if PRINT_LOG
@@ -838,6 +932,7 @@ void RdmaHw::ActiveIncreaseMlx(Ptr<RdmaQueuePair> q){
 	#if PRINT_LOG
 	printf("(%.3lf %.3lf)\n", q->mlx.m_targetRate.GetBitRate() * 1e-9, q->m_rate.GetBitRate() * 1e-9);
 	#endif
+	TraceFlowRate(q, "DCQCN");
 }
 void RdmaHw::HyperIncreaseMlx(Ptr<RdmaQueuePair> q){
 	#if PRINT_LOG
@@ -854,6 +949,7 @@ void RdmaHw::HyperIncreaseMlx(Ptr<RdmaQueuePair> q){
 	#if PRINT_LOG
 	printf("(%.3lf %.3lf)\n", q->mlx.m_targetRate.GetBitRate() * 1e-9, q->m_rate.GetBitRate() * 1e-9);
 	#endif
+	TraceFlowRate(q, "DCQCN");
 }
 
 /***********************
@@ -867,6 +963,8 @@ void RdmaHw::HandleAckHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch)
 	}else{ // do fast react
 		FastReactHp(qp, p, ch);
 	}
+	// 新增速率跟踪接口，记录HPCC路径上的速率演化
+	TraceFlowRate(qp, "HPCC");
 }
 
 void RdmaHw::UpdateRateHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react){
@@ -1046,6 +1144,8 @@ void RdmaHw::HandleAckTimely(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader 
 	}else{ // do fast react
 		FastReactTimely(qp, p, ch);
 	}
+	// 记录TIMELY算法当前速率，便于离线绘图
+	TraceFlowRate(qp, "TIMELY");
 }
 void RdmaHw::UpdateRateTimely(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool us){
 	uint32_t next_seq = qp->snd_nxt;
@@ -1165,6 +1265,9 @@ void RdmaHw::HandleAckDctcp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &
 	// additive inc
 	if (qp->dctcp.m_caState == 0 && new_batch)
 		qp->m_rate = std::min(qp->m_max_rate, qp->m_rate + m_dctcp_rai);
+
+	// DCTCP路径也输出日志，捕获速率与状态
+	TraceFlowRate(qp, "DCTCP");
 }
 
 /*********************
@@ -1175,14 +1278,19 @@ void RdmaHw::SetPintSmplThresh(double p){
 }
 void RdmaHw::HandleAckHpPint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch){
        uint32_t ack_seq = ch.ack.seq;
-       if (rand() % 65536 >= pint_smpl_thresh)
-               return;
+       if (rand() % 65536 >= pint_smpl_thresh){
+	       // 采样被跳过时也记录速率，方便分析数据空洞
+	       TraceFlowRate(qp, "HPCC-PINT_SKIP");
+	       return;
+       }
        // update rate
        if (ack_seq > qp->hpccPint.m_lastUpdateSeq){ // if full RTT feedback is ready, do full update
                UpdateRateHpPint(qp, p, ch, false);
        }else{ // do fast react
                UpdateRateHpPint(qp, p, ch, true);
        }
+	// HPCC-PINT 生效时记录当前速率
+	TraceFlowRate(qp, "HPCC-PINT");
 }
 
 void RdmaHw::UpdateRateHpPint(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react){
@@ -1299,6 +1407,7 @@ void RdmaHw::HandleAckMySelf(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader 
 			RttShmData* data = ShmManager::GetShm(); // lty
 			if (data == nullptr || data == MAP_FAILED) { // lty
 				std::cout << "My CC: shared memory unavailable when waiting for rate" << std::endl; // lty
+				TraceFlowRate(qp, "AICC"); // 记录异常场景下的速率
 				return; // lty
 			}
 
@@ -1366,6 +1475,7 @@ void RdmaHw::HandleAckMySelf(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader 
 	// - CNP标志（拥塞通知）：uint8_t cnp = (ch.ack.flags >> qbbHeader::FLAG_CNP) & 1;
 	// - INT header中的队列长度信息（如果使用NORMAL模式）
 	// - 序列号用于判断是否完成了一个RTT
+	TraceFlowRate(qp, "AICC");
 }
 
 // lty: ShmManager静态成员定义
