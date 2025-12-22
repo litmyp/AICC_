@@ -49,6 +49,8 @@ double pause_time = 5, simulator_stop_time = 3.01;
 std::string data_rate, link_delay, topology_file, flow_file, trace_file, trace_output_file;
 std::string fct_output_file = "fct.txt";
 std::string pfc_output_file = "pfc.txt";
+std::string flow_rate_output_file = "mix/flow_rate.csv";
+bool flow_rate_trace_enabled = true;
 
 double alpha_resume_interval = 55, rp_timer, ewma_gain = 1 / 16;
 double rate_decrease_interval = 4;
@@ -541,6 +543,16 @@ int main(int argc, char *argv[])
 			}else if (key.compare("FCT_OUTPUT_FILE") == 0){
 				conf >> fct_output_file;
 				std::cout << "FCT_OUTPUT_FILE\t\t" << fct_output_file << '\n';
+			}else if (key.compare("FLOW_RATE_TRACE_FILE") == 0){
+				conf >> flow_rate_output_file;
+				if (flow_rate_output_file == "0"){
+					flow_rate_trace_enabled = false;
+					flow_rate_output_file.clear();
+					std::cout << "FLOW_RATE_TRACE_FILE\t\t\t" << "Disabled" << '\n';
+				}else{
+					flow_rate_trace_enabled = true;
+					std::cout << "FLOW_RATE_TRACE_FILE\t\t\t" << flow_rate_output_file << '\n';
+				}
 			}else if (key.compare("HAS_WIN") == 0){
 				conf >> has_win;
 				std::cout << "HAS_WIN\t\t" << has_win << "\n";
@@ -881,6 +893,10 @@ int main(int argc, char *argv[])
 			rdmaHw->SetAttribute("RateBound", BooleanValue(rate_bound));
 			rdmaHw->SetAttribute("DctcpRateAI", DataRateValue(DataRate(dctcp_rate_ai)));
 			rdmaHw->SetPintSmplThresh(pint_prob);
+			if (flow_rate_trace_enabled && !flow_rate_output_file.empty()){
+				// 启动速率跟踪输出，便于后续绘制各条流的速率曲线
+				rdmaHw->SetFlowRateTraceFile(flow_rate_output_file);
+			}
 			// create and install RdmaDriver
 			Ptr<RdmaDriver> rdma = CreateObject<RdmaDriver>();
 			Ptr<Node> node = n.Get(i);
