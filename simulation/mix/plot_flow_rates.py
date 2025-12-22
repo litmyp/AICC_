@@ -28,13 +28,17 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+# FlowKey 表示一个流的五元组信息 (源IP, 源端口, 目的IP, 目的端口, 优先级)
 FlowKey = Tuple[str, str, str, str, str]
 
 
 def load_samples(path: str) -> DefaultDict[str, DefaultDict[FlowKey, List[Tuple[float, float]]]]:
+    # 按拥塞控制算法聚合不同流的采样数据
     per_algo: DefaultDict[str, DefaultDict[FlowKey, List[Tuple[float, float]]]] = defaultdict(lambda: defaultdict(list))
+    # 打开并读取 CSV 文件
     with open(path, newline="") as handle:
         reader = csv.DictReader(handle)
+        # CSV 中必须包含的列
         required = {
             "time_ns",
             "src_ip",
@@ -45,9 +49,11 @@ def load_samples(path: str) -> DefaultDict[str, DefaultDict[FlowKey, List[Tuple[
             "rate_bps",
             "cc_tag",
         }
+        # 检查缺失的列
         missing = required - set(reader.fieldnames or [])
         if missing:
             raise ValueError(f"Missing columns in {path}: {sorted(missing)}")
+        # 逐行读取数据并整理
         for row in reader:
             key = (
                 row["src_ip"],
@@ -56,8 +62,8 @@ def load_samples(path: str) -> DefaultDict[str, DefaultDict[FlowKey, List[Tuple[
                 row["dst_port"],
                 row["priority"],
             )
-            time_s = float(row["time_ns"]) / 1e9
-            rate_gbps = float(row["rate_bps"]) / 1e9
+            time_s = float(row["time_ns"]) / 1e9  # 时间从纳秒转换为秒
+            rate_gbps = float(row["rate_bps"]) / 1e9  # 速率从 bps 转换为 Gbps
             per_algo[row["cc_tag"]][key].append((time_s, rate_gbps))
     return per_algo
 
