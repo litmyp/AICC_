@@ -9,6 +9,7 @@ TRACE_FILE mix/trace.txt {input file: nodes to monitor packet-level events (enqu
 TRACE_OUTPUT_FILE mix/mix.tr {output file: packet-level events (enqu, dequ, pfc, etc.)}
 FCT_OUTPUT_FILE mix/fct.txt {output file: flow completion time of different flows}
 PFC_OUTPUT_FILE mix/pfc.txt {output file: result of PFC}
+FLOW_RATE_TRACE_FILE mix/flow_rate.csv {output file: per-flow rate samples (use 0 to disable)}
 
 SIMULATOR_STOP_TIME 4.00 {simulation stop time}
 
