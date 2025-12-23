@@ -166,15 +166,15 @@ TypeId RdmaRxQueuePair::GetTypeId (void)
 }
 
 RdmaRxQueuePair::RdmaRxQueuePair(){
-	sip = dip = sport = dport = 0;
-	m_ipid = 0;
-	ReceiverNextExpectedSeq = 0;
-	m_nackTimer = Time(0);
-	m_lastNACK = 0;
-	m_lastAckedSeq = 0;
-	m_ackFlushEvent = EventId();
-	m_hasLastIntHeader = false;
-	m_pendingEcnBits = 0;
+	sip = dip = sport = dport = 0;           // 初始化源/目的地址和端口，标记尚未绑定具体连接
+	m_ipid = 0;                              // 初始化 IP 报文标识，用于后续标记首个数据包
+	ReceiverNextExpectedSeq = 0;             // 期望接收的下一个序列号从 0 开始
+	m_nackTimer = Time(0);                   // 初始化 NACK 定时器为 0，表示未启动
+	m_lastNACK = 0;                          // 记录最近一次发送的 NACK 序列号
+	m_lastAckedSeq = 0;                      // 记录最近一次确认的序列号
+	m_ackFlushEvent = EventId();             // 清空 ACK 刷新事件，确保构造后无挂起事件
+	m_hasLastIntHeader = false;              // 标记上一个包是否携带 INT 头部
+	m_pendingEcnBits = 0;                    // 清空待处理的 ECN 标识位
 }
 
 uint32_t RdmaRxQueuePair::GetHash(void){
