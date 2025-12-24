@@ -472,7 +472,10 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch){
 	}
 	return 0;
 }
-
+/**
+ * 在 RDMA 接收队列对 (RdmaRxQueuePair) 上安排一次 ACK 刷新事件，用于实现 ACK 聚合和延迟发送。
+ * m_ackFlushTimeout 的设置直接影响 ACK 延迟与吞吐之间的权衡，过长可能增加 RTT，过短则减少聚合收益。
+ */
 void RdmaHw::ScheduleAckFlush(Ptr<RdmaRxQueuePair> q){ // 调度接收端的 ACK 刷新事件
 	if (m_ack_interval == 0){ // 若未启用 ACK 聚合则直接返回
 		return; // 不执行调度
@@ -486,55 +489,73 @@ void RdmaHw::ScheduleAckFlush(Ptr<RdmaRxQueuePair> q){ // 调度接收端的 ACK
 	q->m_ackFlushEvent = Simulator::Schedule(m_ackFlushTimeout, &RdmaHw::HandleAckFlushTimeout, this, q); // 以默认超时安排新的 ACK 刷新
 }
 
+/**
+ * ACK 聚合定时器触发时的回调函数，实现延迟确认发送
+ * 延迟确认可以把短时间内积累的多个接收事件合并成一次 ACK 反馈，
+ * 这样能显著降低 ACK 帧数量，减轻高优先级队列拥塞和 NIC 中断负担。
+ * 等待定时器触发还能留出时间收集最新的 INT 头和 ECN 标记，避免发送过期或分散的信息，
+ * 从而让发送端掌握更完整的拥塞反馈。
+ */
 void RdmaHw::HandleAckFlushTimeout(Ptr<RdmaRxQueuePair> q){
-	// Timeout ensures the final bytes are acknowledged even when the interval threshold is not met.
+	// 将事件句柄重置为空，表示当前没有挂起的刷新任务
 	q->m_ackFlushEvent = EventId();
+	// 若接收端期望序号与最后一次确认的序号相同，说明没有新增数据需要确认
 	if (q->ReceiverNextExpectedSeq == q->m_lastAckedSeq){
+		// 无需发送 ACK，直接返回
 		return;
 	}
+	// 若先前缓存过 INT 头则直接复用，否则使用默认构造的 INT 头
 	IntHeader ih = q->m_hasLastIntHeader ? q->m_lastIntHeader : IntHeader();
+	// 发送聚合后的 ACK，携带是否存在 ECN 标记及最新的 INT 信息
 	SendReceiverFeedback(q, q->ReceiverNextExpectedSeq, true, q->m_pendingEcnBits != 0, ih);
 }
 
+/**
+ * 负责构造并发送接收端对发送端的 ACK 或 NACK 反馈报文。
+ * 该函数会取消任何待触发的 ACK 刷新事件，确保反馈及时发送且不重复。
+ * 反馈报文包含确认序号、优先级组索引、源/目的端口以及最新的 INT 信息，
+ * 并根据需要设置拥塞通知 (CNP) 标志位以指示网络拥塞状态。
+ * 发送完成后，函数会更新接收队列对的状态，清除待发送的 ECN 位和缓存的 INT 头标记。
+ */
 void RdmaHw::SendReceiverFeedback(Ptr<RdmaRxQueuePair> q, uint32_t seq, bool isAck, bool setCnp, const IntHeader &ih){
-	// Helper emits ACK/NACK packets while resetting receiver bookkeeping for the next aggregation window.
-	if (q->m_ackFlushEvent.IsRunning()){
-		Simulator::Cancel(q->m_ackFlushEvent);
+	// 向发送端反馈ACK或NACK，并重置接收端的聚合状态
+	if (q->m_ackFlushEvent.IsRunning()){ // 如果存在待触发的ACK刷新事件
+		Simulator::Cancel(q->m_ackFlushEvent); // 取消该事件以避免重复发送
 	}
-	q->m_ackFlushEvent = EventId();
+	q->m_ackFlushEvent = EventId(); // 重置事件句柄表示当前无定时任务
 
-	qbbHeader seqh;
-	seqh.SetSeq(seq);
-	seqh.SetPG(q->m_ecn_source.qIndex);
-	seqh.SetSport(q->sport);
-	seqh.SetDport(q->dport);
-	seqh.SetIntHeader(ih);
-	if (setCnp){
-		seqh.SetCnp();
+	qbbHeader seqh; // 构造高优先级反馈报文的自定义头
+	seqh.SetSeq(seq); // 设置确认的序号
+	seqh.SetPG(q->m_ecn_source.qIndex); // 设置优先级组索引
+	seqh.SetSport(q->sport); // 设置源端口
+	seqh.SetDport(q->dport); // 设置目的端口
+	seqh.SetIntHeader(ih); // 附带最近的INT信息
+	if (setCnp){ // 如果需要携带拥塞标志
+		seqh.SetCnp(); // 设置CNP标志位
 	}
 
-	Ptr<Packet> newp = Create<Packet>(std::max(60-14-20-(int)seqh.GetSerializedSize(), 0));
-	newp->AddHeader(seqh);
+	Ptr<Packet> newp = Create<Packet>(std::max(60-14-20-(int)seqh.GetSerializedSize(), 0)); // 创建最小长度的反馈包骨架
+	newp->AddHeader(seqh); // 挂载自定义头部
 
-	Ipv4Header head;
-	head.SetDestination(Ipv4Address(q->dip));
-	head.SetSource(Ipv4Address(q->sip));
-	head.SetProtocol(isAck ? 0xFC : 0xFD);
-	head.SetTtl(64);
-	head.SetPayloadSize(newp->GetSize());
-	head.SetIdentification(q->m_ipid++);
+	Ipv4Header head; // 创建IPv4头部
+	head.SetDestination(Ipv4Address(q->dip)); // 设置目的地址
+	head.SetSource(Ipv4Address(q->sip)); // 设置源地址
+	head.SetProtocol(isAck ? 0xFC : 0xFD); // 根据ACK或NACK选择协议号
+	head.SetTtl(64); // 设置TTL
+	head.SetPayloadSize(newp->GetSize()); // 写入负载长度
+	head.SetIdentification(q->m_ipid++); // 使用并递增IP ID
 
-	newp->AddHeader(head);
-	AddHeader(newp, 0x800);
-	uint32_t nic_idx = GetNicIdxOfRxQp(q);
-	m_nic[nic_idx].dev->RdmaEnqueueHighPrioQ(newp);
-	m_nic[nic_idx].dev->TriggerTransmit();
+	newp->AddHeader(head); // 添加IPv4头部
+	AddHeader(newp, 0x800); // 添加PPP头映射到IPv4
+	uint32_t nic_idx = GetNicIdxOfRxQp(q); // 选取承载该QP的NIC索引
+	m_nic[nic_idx].dev->RdmaEnqueueHighPrioQ(newp); // 将反馈包入高优先级队列
+	m_nic[nic_idx].dev->TriggerTransmit(); // 立即触发发送
 
-	if (isAck){
-		q->m_lastAckedSeq = seq;
+	if (isAck){ // 如果发送的是ACK
+		q->m_lastAckedSeq = seq; // 更新最后确认序号
 	}
-	q->m_pendingEcnBits = 0;
-	q->m_hasLastIntHeader = false;
+	q->m_pendingEcnBits = 0; // 清空待发送的ECN位
+	q->m_hasLastIntHeader = false; // 清除缓存的INT头标记
 }
 
 int RdmaHw::ReceiveCnp(Ptr<Packet> p, CustomHeader &ch){
@@ -675,27 +696,44 @@ int RdmaHw::Receive(Ptr<Packet> p, CustomHeader &ch){
 	return 0;
 }
 
+/**
+ * @brief 检查接收到的数据包序号与接收队列对的期望序号，决定反馈类型。
+ * @param seq 接收到的数据包的序号。
+ * @param q 指向接收队列对 (RdmaRxQueuePair) 的智能指针。
+ * @param size 接收到的数据包的有效负载大小（字节数）。
+ * @return 整数值表示反馈类型：
+ *         1 - 序号匹配，发送 ACK。
+ *         2 - 序号超前，发送 NACK。
+ *         3 - 序号落后，忽略数据包。
+ *         4 - 序号超前但已发送过 NACK，忽略数据包。
+ *         5 - 序号匹配但未达 ACK 聚合间隔，延迟发送 ACK。
+ * @details 当 seq 恰好等于接收方期望的 ReceiverNextExpectedSeq 时，更新下一期待序列，
+ * 			并根据累积未确认字节数是否超过 m_ack_interval 来判断是否触发 ACK（返回值 1）或仅更新状态（返回值 5）。
+ * 			当 seq 大于期望值时，说明存在丢包或乱序；若 NACK 冷却时间已到或上一次 NACK 的序列不同，
+ * 			则记录当前期望序列、重置 NACK 定时器并在 m_backto0 和 m_chunk 条件满足时对齐到块边界，然后返回 2 表示发送 NACK，否则返回 4 表示暂不重复发送。
+ * 			当 seq 小于期望值时，属于重复包，返回 3。
+ */
 int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size){
-	uint32_t expected = q->ReceiverNextExpectedSeq;
-	if (seq == expected){
-		q->ReceiverNextExpectedSeq = expected + size;
-		uint32_t bytesSinceAck = q->ReceiverNextExpectedSeq - q->m_lastAckedSeq;
-		if (m_ack_interval == 0 || bytesSinceAck >= m_ack_interval){
-			return 1;
+	uint32_t expected = q->ReceiverNextExpectedSeq;	//期望接收的下一个序号
+	if (seq == expected){	//序号匹配，正常接收
+		q->ReceiverNextExpectedSeq = expected + size;	//更新期望序号
+		uint32_t bytesSinceAck = q->ReceiverNextExpectedSeq - q->m_lastAckedSeq;	//计算自上次ACK以来累计的字节数
+		if (m_ack_interval == 0 || bytesSinceAck >= m_ack_interval){	//检查是否达到ACK发送阈值
+			return 1;	//需要发送ACK
 		}
-		return 5;
-	} else if (seq > expected) {
-		if (Simulator::Now() >= q->m_nackTimer || q->m_lastNACK != expected){
-			q->m_nackTimer = Simulator::Now() + MicroSeconds(m_nack_interval);
-			q->m_lastNACK = expected;
-			if (m_backto0 && m_chunk != 0){
-				q->ReceiverNextExpectedSeq = (q->ReceiverNextExpectedSeq / m_chunk) * m_chunk;
+		return 5;	//需要延迟发送ACK以实现聚合
+	} else if (seq > expected) {	//序号超前，可能有丢包
+		if (Simulator::Now() >= q->m_nackTimer || q->m_lastNACK != expected){	//检查NACK冷却时间或上次NACK序号
+			q->m_nackTimer = Simulator::Now() + MicroSeconds(m_nack_interval);	//重置NACK冷却时间
+			q->m_lastNACK = expected;	//记录本次NACK的序号
+			if (m_backto0 && m_chunk != 0){	//对齐到块边界
+				q->ReceiverNextExpectedSeq = (q->ReceiverNextExpectedSeq / m_chunk) * m_chunk;	
 			}
-			return 2;
+			return 2;	//需要发送NACK
 		}
-		return 4;
+		return 4;	//已发送过NACK，忽略
 	}else {
-		return 3;
+		return 3;	//序号落后，重复包，忽略
 	}
 }
 void RdmaHw::AddHeader (Ptr<Packet> p, uint16_t protocolNumber){
