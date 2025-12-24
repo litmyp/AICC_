@@ -361,8 +361,8 @@ void RdmaHw::AddQueuePair(uint64_t size, uint16_t pg, Ipv4Address sip, Ipv4Addre
 				qp->hp.hopState[i].Rc = m_bps;
 		}
 	}else if (m_cc_mode == 7){
-		// 默认以 10Gb/s 速率启动 TIMELY，必要时回退为链路速率
-		DataRate initRate("10Gb/s");
+		// 默认以 100Gb/s 速率启动 TIMELY，必要时回退为链路速率
+		DataRate initRate("100Gb/s");
 		if (initRate.GetBitRate() > m_bps.GetBitRate()){
 			initRate = m_bps;
 		}
@@ -1214,64 +1214,63 @@ void RdmaHw::HandleAckTimely(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader 
  * @return 无
  * @note 该函数根据RTT和队列延迟信息调整发送速率，实现TIMELY拥塞控制算法的核心逻辑。
  */
-void RdmaHw::UpdateRateTimely(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool us){
-	uint32_t next_seq = qp->snd_nxt;
-	uint64_t rtt = Simulator::Now().GetTimeStep() - ch.ack.ih.ts;
-	bool print = !us;
-	if (qp->tmly.m_lastUpdateSeq != 0){ // not first RTT
-		int64_t new_rtt_diff = (int64_t)rtt - (int64_t)qp->tmly.lastRtt;
-		double rtt_diff = (1 - m_tmly_alpha) * qp->tmly.rttDiff + m_tmly_alpha * new_rtt_diff;
-		double gradient = rtt_diff / m_tmly_minRtt;
-		bool inc = false;
-		double c = 0;
-		#if PRINT_LOG
+void RdmaHw::UpdateRateTimely(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool us){ // TIMELY主调节逻辑
+	uint32_t next_seq = qp->snd_nxt; // 获取发送端下一待发序号
+	uint64_t rtt = Simulator::Now().GetTimeStep() - ch.ack.ih.ts; // 计算往返延迟
+	bool print = !us; // 判断是否打印调试信息
+	if (qp->tmly.m_lastUpdateSeq != 0){ // 非首个RTT才执行调节
+		int64_t new_rtt_diff = (int64_t)rtt - (int64_t)qp->tmly.lastRtt; // 计算本轮RTT差值
+		double rtt_diff = (1 - m_tmly_alpha) * qp->tmly.rttDiff + m_tmly_alpha * new_rtt_diff; // EWMA平滑RTT差
+		double gradient = rtt_diff / m_tmly_minRtt; // 归一化梯度
+		bool inc = false; // 是否加速标志
+		double c = 0; // 减速因子
+		#if PRINT_LOG // 可选调试输出
 		if (print)
-			printf("%lu node:%u rtt:%lu rttDiff:%.0lf gradient:%.3lf rate:%.3lf", Simulator::Now().GetTimeStep(), m_node->GetId(), rtt, rtt_diff, gradient, qp->tmly.m_curRate.GetBitRate() * 1e-9);
+			printf("%lu node:%u rtt:%lu rttDiff:%.0lf gradient:%.3lf rate:%.3lf", Simulator::Now().GetTimeStep(), m_node->GetId(), rtt, rtt_diff, gradient, qp->tmly.m_curRate.GetBitRate() * 1e-9); // 打印调试信息
 		#endif
-		if (rtt < m_tmly_TLow){
-			inc = true;
-		}else if (rtt > m_tmly_THigh){
-			c = 1 - m_tmly_beta * (1 - (double)m_tmly_THigh / rtt);
-			inc = false;
-		}else if (gradient <= 0){
-			inc = true;
-		}else{
-			c = 1 - m_tmly_beta * gradient;
+		if (rtt < m_tmly_TLow){ // RTT低于下阈值
+			inc = true; // 触发加速
+		}else if (rtt > m_tmly_THigh){ // RTT高于上阈值
+			c = 1 - m_tmly_beta * (1 - (double)m_tmly_THigh / rtt); // 计算减速因子
+			inc = false; // 触发减速
+		}else if (gradient <= 0){ // RTT梯度非正
+			inc = true; // 继续加速
+		}else{ // RTT介于阈值且梯度为正
+			c = 1 - m_tmly_beta * gradient; // 根据梯度计算减速因子
 			if (c < 0)
-				c = 0;
-			inc = false;
+				c = 0; // 下界裁剪
+			inc = false; // 触发减速
 		}
-		if (inc){
-			if (qp->tmly.m_incStage < 5){
-				qp->m_rate = qp->tmly.m_curRate + m_rai;
+		if (inc){ // 需要加速
+			if (qp->tmly.m_incStage < 5){ // 当前处于普通AI阶段
+				qp->m_rate = qp->tmly.m_curRate + m_rai; // 使用小步长增加速率
 			}else{
-				qp->m_rate = qp->tmly.m_curRate + m_rhai;
+				qp->m_rate = qp->tmly.m_curRate + m_rhai; // 进入HAI阶段，大步增速
 			}
 			if (qp->m_rate > qp->m_max_rate)
-				qp->m_rate = qp->m_max_rate;
+				qp->m_rate = qp->m_max_rate; // 限制不超过链路速率
 			if (!us){
-				qp->tmly.m_curRate = qp->m_rate;
-				qp->tmly.m_incStage++;
-				qp->tmly.rttDiff = rtt_diff;
+				qp->tmly.m_curRate = qp->m_rate; // 更新基准速率
+				qp->tmly.m_incStage++; // 累计加速阶段
+				qp->tmly.rttDiff = rtt_diff; // 记录平滑RTT差
 			}
-		}else{
-			qp->m_rate = std::max(m_minRate, qp->tmly.m_curRate * c); 
+		}else{ // 需要减速
+			qp->m_rate = std::max(m_minRate, qp->tmly.m_curRate * c); // 按比例下降并保持下界
 			if (!us){
-				qp->tmly.m_curRate = qp->m_rate;
-				qp->tmly.m_incStage = 0;
-				qp->tmly.rttDiff = rtt_diff;
+				qp->tmly.m_curRate = qp->m_rate; // 更新基准速率
+				qp->tmly.m_incStage = 0; // 重置加速阶段
+				qp->tmly.rttDiff = rtt_diff; // 记录平滑RTT差
 			}
 		}
-		#if PRINT_LOG
+		#if PRINT_LOG // 输出调整结果
 		if (print){
-			printf(" %c %.3lf\n", inc? '^':'v', qp->m_rate.GetBitRate() * 1e-9);
+			printf(" %c %.3lf\n", inc? '^':'v', qp->m_rate.GetBitRate() * 1e-9); // 显示方向与新速率
 		}
 		#endif
 	}
-	if (!us && next_seq > qp->tmly.m_lastUpdateSeq){
-		qp->tmly.m_lastUpdateSeq = next_seq;
-		// update
-		qp->tmly.lastRtt = rtt;
+	if (!us && next_seq > qp->tmly.m_lastUpdateSeq){ // 仅在完整RTT结束时更新
+		qp->tmly.m_lastUpdateSeq = next_seq; // 标记最新RTT的终点序号
+		qp->tmly.lastRtt = rtt; // 存档最新RTT
 	}
 }
 void RdmaHw::FastReactTimely(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch){
