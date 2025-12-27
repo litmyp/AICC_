@@ -180,7 +180,7 @@ namespace ns3 {
 				MakeBooleanChecker())
 			.AddAttribute("QcnEnabled",
 				"Enable the generation of PAUSE packet.",
-				BooleanValue(false),
+				BooleanValue(true),// lty:初始值是false，此处改为true
 				MakeBooleanAccessor(&QbbNetDevice::m_qcnEnabled),
 				MakeBooleanChecker())
 			.AddAttribute("DynamicThreshold",

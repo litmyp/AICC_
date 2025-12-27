@@ -184,6 +184,12 @@ protected:
   std::vector<ECNAccount> *m_ecn_source;
 
 public:
+
+  //lty added
+  // void print_qcnEnabled(){
+  //   std::cout<<"qbbnetdevice's m_qcnEnabled=="<<m_qcnEnabled<<std::endl;
+  // }
+
 	Ptr<RdmaEgressQueue> m_rdmaEQ;
 	void RdmaEnqueueHighPrioQ(Ptr<Packet> p);
 

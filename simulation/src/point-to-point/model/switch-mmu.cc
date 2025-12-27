@@ -62,6 +62,17 @@ namespace ns3 {
 	}
 	void SwitchMmu::UpdateEgressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize){
 		egress_bytes[port][qIndex] += psize;
+	// lty: monitor queue length vs ECN thresholds
+	uint32_t qlen = egress_bytes[port][qIndex];
+	if (qlen >= kmin[port]) {
+		std::cout << Simulator::Now().GetTimeStep()
+		          << " SwitchMmu port=" << port
+		          << " q=" << qIndex
+		          << " egress_bytes=" << qlen
+		          << " kmin=" << kmin[port]
+		          << " kmax=" << kmax[port]
+		          << std::endl;
+	}
 	}
 	void SwitchMmu::RemoveFromIngressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize){
 		uint32_t from_hdrm = std::min(hdrm_bytes[port][qIndex], psize);
@@ -72,6 +83,17 @@ namespace ns3 {
 	}
 	void SwitchMmu::RemoveFromEgressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize){
 		egress_bytes[port][qIndex] -= psize;
+	// lty: monitor queue drain vs thresholds
+	uint32_t qlen = egress_bytes[port][qIndex];
+	if (qlen >= kmin[port]) {
+		std::cout << Simulator::Now().GetTimeStep()
+		          << " SwitchMmu drain port=" << port
+		          << " q=" << qIndex
+		          << " egress_bytes=" << qlen
+		          << " kmin=" << kmin[port]
+		          << " kmax=" << kmax[port]
+		          << std::endl;
+	}
 	}
 	bool SwitchMmu::CheckShouldPause(uint32_t port, uint32_t qIndex){
 		return !paused[port][qIndex] && (hdrm_bytes[port][qIndex] > 0 || GetSharedUsed(port, qIndex) >= GetPfcThreshold(port));
@@ -96,18 +118,37 @@ namespace ns3 {
 		uint32_t used = ingress_bytes[port][qIndex];
 		return used > reserve ? used - reserve : 0;
 	}
-	bool SwitchMmu::ShouldSendCN(uint32_t ifindex, uint32_t qIndex){
-		if (qIndex == 0)
-			return false;
-		if (egress_bytes[ifindex][qIndex] > kmax[ifindex])
-			return true;
-		if (egress_bytes[ifindex][qIndex] > kmin[ifindex]){
-			double p = pmax[ifindex] * double(egress_bytes[ifindex][qIndex] - kmin[ifindex]) / (kmax[ifindex] - kmin[ifindex]);
-			if (UniformVariable(0, 1).GetValue() < p)
-				return true;
-		}
+bool SwitchMmu::ShouldSendCN(uint32_t ifindex, uint32_t qIndex){
+	if (qIndex == 0)
 		return false;
+	// lty added: 记录 ShouldSendCN 输入状态
+	NS_LOG_LOGIC("lty added: ShouldSendCN port=" << ifindex
+			<< " qIndex=" << qIndex
+			<< " egress_bytes=" << egress_bytes[ifindex][qIndex]
+			<< " kmin=" << kmin[ifindex]
+			<< " kmax=" << kmax[ifindex]
+			<< " ts=" << Simulator::Now().GetTimeStep());
+	if (egress_bytes[ifindex][qIndex] > kmax[ifindex])
+	{
+		// lty added: 超过 kmax 立即告警
+		NS_LOG_LOGIC("lty added: ShouldSendCN TRUE due to kmax exceed ("
+				<< egress_bytes[ifindex][qIndex] << " > " << kmax[ifindex] << ")");
+		return true;
 	}
+	if (egress_bytes[ifindex][qIndex] > kmin[ifindex]){
+		double p = pmax[ifindex] * double(egress_bytes[ifindex][qIndex] - kmin[ifindex]) / (kmax[ifindex] - kmin[ifindex]);
+		double sample = UniformVariable(0, 1).GetValue(); // lty added: 记录概率采样
+		NS_LOG_LOGIC("lty added: ShouldSendCN probabilistic check qlen="
+				<< egress_bytes[ifindex][qIndex] << " p=" << p << " sample=" << sample);
+		if (sample < p)
+		{
+			// lty added: 概率命中返回 TRUE
+			NS_LOG_LOGIC("lty added: ShouldSendCN TRUE due to probability trigger");
+			return true;
+		}
+	}
+	return false;
+}
 	void SwitchMmu::ConfigEcn(uint32_t port, uint32_t _kmin, uint32_t _kmax, double _pmax){
 		kmin[port] = _kmin * 1000;
 		kmax[port] = _kmax * 1000;

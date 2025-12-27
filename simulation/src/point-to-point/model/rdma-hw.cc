@@ -163,12 +163,12 @@ TypeId RdmaHw::GetTypeId (void)
 				MakeDoubleChecker<double>())
 		.AddAttribute("TimelyTLow",
 				"TLow of TIMELY (ns)",
-				UintegerValue(50000),
+				UintegerValue(2000),//原来是50000，现在改为2000
 				MakeUintegerAccessor(&RdmaHw::m_tmly_TLow),
 				MakeUintegerChecker<uint64_t>())
 		.AddAttribute("TimelyTHigh",
 				"THigh of TIMELY (ns)",
-				UintegerValue(500000),
+				UintegerValue(20000),//原来是500000，现在改为20000
 				MakeUintegerAccessor(&RdmaHw::m_tmly_THigh),
 				MakeUintegerChecker<uint64_t>())
 		.AddAttribute("TimelyMinRtt",
@@ -203,6 +203,7 @@ void RdmaHw::SetNode(Ptr<Node> node){
 void RdmaHw::Setup(QpCompleteCallback cb){
 	for (uint32_t i = 0; i < m_nic.size(); i++){
 		Ptr<QbbNetDevice> dev = m_nic[i].dev;
+
 		if (dev == NULL)
 			continue;
 		// share data with NIC
@@ -329,15 +330,15 @@ int RdmaHw::ReceiveUdp(Ptr<Packet> p, CustomHeader &ch){
 	int x = ReceiverCheckSeq(ch.udp.seq, rxQp, payload_size);
 	if (x == 1 || x == 2){ //generate ACK or NACK
 		//lty 用于测试修改ack生成间隔后的现象
-		 if(x==1){
-		// // 	NS_LOG_INFO("Generating ACK"
-		// // 					<< " for sequence number " << rxQp->ReceiverNextExpectedSeq
-		// // 					<< " from " << ch.sip << ":" << ch.udp.sport
-		// // 					<< " to " << ch.dip << ":" << ch.udp.dport);
-		// // }
-		// //替换：cout 
-			std::cout<<" for sequence number " << rxQp->ReceiverNextExpectedSeq<< " from " << ch.sip << ":" << ch.udp.sport<< " to " << ch.dip << ":" << ch.udp.dport<<"generate an ACK pkt"<<std::endl;
-		}
+		//  if(x==1){
+		// // // 	NS_LOG_INFO("Generating ACK"
+		// // // 					<< " for sequence number " << rxQp->ReceiverNextExpectedSeq
+		// // // 					<< " from " << ch.sip << ":" << ch.udp.sport
+		// // // 					<< " to " << ch.dip << ":" << ch.udp.dport);
+		// // // }
+		// // //替换：cout 
+		// 	std::cout<<" for sequence number " << rxQp->ReceiverNextExpectedSeq<< " from " << ch.sip << ":" << ch.udp.sport<< " to " << ch.dip << ":" << ch.udp.dport<<"generate an ACK pkt"<<std::endl;
+		// }
 
 		qbbHeader seqh;
 		seqh.SetSeq(rxQp->ReceiverNextExpectedSeq);
@@ -409,6 +410,9 @@ int RdmaHw::ReceiveCnp(Ptr<Packet> p, CustomHeader &ch){
 		}else if (m_cc_mode == 10){
 			qp->hpccPint.m_curRate = dev->GetDataRate();
 		}
+		else if(m_cc_mode == 16){
+			std::cout<<"cnp为1且cc_mode==16, 待完善"<<std::endl;
+		}
 	}
 	return 0;
 }
@@ -443,16 +447,26 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch){
 	if (ch.l3Prot == 0xFD) // NACK
 		RecoverQueue(qp);
 
+	// lty added: 进入CC之前，打印当前节点及QP的发送速率，便于排查拥塞控制效果
+	std::cout << "lty added: node=" << m_node->GetId()
+	          << " qp=[" << qp->sip << ":" << qp->sport << " -> "
+	          << qp->dip << ":" << qp->dport << "] current_rate="
+	          << qp->m_rate.GetBitRate()*1e-9 << "Gbps" << std::endl;
+
 	// handle cnp
 	if (cnp){
 		if (m_cc_mode == 1){ // mlx version
 			cnp_received_mlx(qp);
+			std::cout<<"go into dcqcn's rate control"<<std::endl;//lty added
 		} 
 	}
+
+
 
 	if (m_cc_mode == 3){
 		HandleAckHp(qp, p, ch);
 	}else if (m_cc_mode == 7){
+		std::cout<<"CC is timely"<<std::endl;
 		HandleAckTimely(qp, p, ch);
 	}else if (m_cc_mode == 8){
 		HandleAckDctcp(qp, p, ch);
@@ -484,31 +498,17 @@ int RdmaHw::Receive(Ptr<Packet> p, CustomHeader &ch){
 
 int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size){
 	uint32_t expected = q->ReceiverNextExpectedSeq;
-	//lty
-	std::cout<<"execute ReceiverCHeckSeq function"<<std::endl;
 	if (seq == expected){
 		q->ReceiverNextExpectedSeq = expected + size;
-		//lty
-		std::cout<<"before plus m_milestone_rx=="<<q->m_milestone_rx<<std::endl;
-		//if (q->ReceiverNextExpectedSeq >= q->m_milestone_rx){
-		if (q->ReceiverNextExpectedSeq % q->m_milestone_rx == 0){
-			q->m_milestone_rx += m_ack_interval;
-			//lty
-			std::cout<<"m_ack_interval=="<<m_ack_interval<<std::endl;
-			std::cout<<"m_milestone_rx=="<<q->m_milestone_rx<<std::endl;
-			std::cout<<"q->receiverExpectedSeq"<<q->ReceiverNextExpectedSeq<<std::endl;
+		if (q->ReceiverNextExpectedSeq >= q->m_milestone_rx){
+			q->m_milestone_rx += m_ack_interval;;
 			return 1; //Generate ACK
-		// lty
-		// }else if (q->ReceiverNextExpectedSeq % m_chunk == 0){
-		// 	std::cout<<"m_chunk"<<std::endl;
-		// 	return 1;
+		}else if (q->ReceiverNextExpectedSeq % m_chunk == 0){
+			return 1;
 		}else {
-			std::cout<<"return 5"<<std::endl;
 			return 5;
 		}
 	} else if (seq > expected) {
-		//lty
-		std::cout<<"goto nack branch"<<std::endl;
 		// Generate NACK
 		if (Simulator::Now() >= q->m_nackTimer || q->m_lastNACK != expected){
 			q->m_nackTimer = Simulator::Now() + MicroSeconds(m_nack_interval);
@@ -520,8 +520,6 @@ int RdmaHw::ReceiverCheckSeq(uint32_t seq, Ptr<RdmaRxQueuePair> q, uint32_t size
 		}else
 			return 4;
 	}else {
-		//lty
-		std::cout<<"goto else branch"<<std::endl;
 		// Duplicate. 
 		return 3;
 	}
@@ -659,7 +657,7 @@ void RdmaHw::ChangeRate(Ptr<RdmaQueuePair> qp, DataRate new_rate){
 	qp->m_rate = new_rate;
 }
 
-#define PRINT_LOG 0
+#define PRINT_LOG 1
 /******************************
  * Mellanox's version of DCQCN
  *****************************/
@@ -791,6 +789,26 @@ void RdmaHw::HyperIncreaseMlx(Ptr<RdmaQueuePair> q){
  ***********************/
 void RdmaHw::HandleAckHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch){
 	uint32_t ack_seq = ch.ack.seq;
+
+	// ----lty-----: 在 NORMAL 模式下根据在飞数据量和当前发送速率估算 RTT
+	// 近似关系：BytesInFlight ≈ Rate * RTT / 8  =>  RTT ≈ BytesInFlight * 8 / Rate
+	uint64_t on_the_fly = qp->GetOnTheFly();
+	uint64_t rate_bps = qp->m_rate.GetBitRate();
+	if (on_the_fly > 0 && rate_bps > 0){
+		double rtt_s = static_cast<double>(on_the_fly) * 8.0 / static_cast<double>(rate_bps);
+		uint64_t rtt_ns = static_cast<uint64_t>(rtt_s * 1e9);
+		std::cout << "HPCC: node=" << m_node->GetId()
+		          << " qp=[" << qp->sip << ":" << qp->sport
+		          << " -> " << qp->dip << ":" << qp->dport << "]"
+		          << " seq=" << ack_seq
+		          << " estRTT=" << rtt_ns << " ns ("
+		          << rtt_ns / 1000000.0 << " ms)"
+		          << " on_the_fly=" << on_the_fly
+		          << " rate=" << qp->m_rate.GetBitRate() * 1e-9 << " Gb/s"
+		          << std::endl;
+	}
+	//----------------------
+
 	// update rate
 	if (ack_seq > qp->hp.m_lastUpdateSeq){ // if full RTT feedback is ready, do full update
 		UpdateRateHp(qp, p, ch, false);
@@ -937,6 +955,7 @@ void RdmaHw::UpdateRateHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch
 			}
 			if (updated_any)
 				ChangeRate(qp, new_rate);
+			    std::cout<<qp->sip.Get()<<" "<<qp->dip.Get()<<" "<<qp->sport<<" "<<qp->dport<<" 速率更新为："<<new_rate.GetBitRate()*1e-9<<std::endl;//lty added
 			if (!fast_react){
 				if (updated_any){
 					qp->hp.m_curRate = new_rate;
@@ -963,6 +982,7 @@ void RdmaHw::UpdateRateHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch
 void RdmaHw::FastReactHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch){
 	if (m_fast_react)
 		UpdateRateHp(qp, p, ch, true);
+	    std::cout<<"进入速率恢复阶段"<<std::endl;//lty added
 }
 
 /**********************
@@ -1038,6 +1058,7 @@ void RdmaHw::UpdateRateTimely(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader
 	}
 }
 void RdmaHw::FastReactTimely(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch){
+
 }
 
 /**********************

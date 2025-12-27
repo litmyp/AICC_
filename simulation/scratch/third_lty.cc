@@ -838,6 +838,15 @@ int main(int argc, char *argv[])
 				NS_ASSERT_MSG(rate2kmax.find(rate) != rate2kmax.end(), "must set kmax for each link speed");
 				NS_ASSERT_MSG(rate2pmax.find(rate) != rate2pmax.end(), "must set pmax for each link speed");
 				sw->m_mmu->ConfigEcn(j, rate2kmin[rate], rate2kmax[rate], rate2pmax[rate]);
+				/////////=======lty added: print ECN config on switch nodes============
+				std::cout << "switch node " << sw->GetId()
+				          << " dev " << j
+				          << " ECN kmin=" << rate2kmin[rate] << "B"
+				          << " kmax=" << rate2kmax[rate] << "B"
+				          << " pmax=" << rate2pmax[rate]
+				          << " rate=" << rate/1e9 << "Gbps"
+				          << std::endl;
+				///////////end==========
 				// set pfc
 				uint64_t delay = DynamicCast<QbbChannel>(dev->GetChannel())->GetDelay().GetTimeStep();
 				uint32_t headroom = rate * delay / 8 / 1000000000 * 3;
@@ -899,6 +908,25 @@ int main(int argc, char *argv[])
 			rdma->TraceConnectWithoutContext("QpComplete", MakeBoundCallback (qp_finish, fct_output));
 		}
 	}
+
+	// lty added: print QcnEnabled status on switch nodes============
+	for (uint32_t i = 0; i < node_num; i++){
+		Ptr<Node> node = n.Get(i);
+		if (node->GetNodeType() == 0)
+			continue; // skip hosts
+		for (uint32_t j = 0; j < node->GetNDevices(); j++){
+			Ptr<QbbNetDevice> dev = DynamicCast<QbbNetDevice>(node->GetDevice(j));
+			if (!dev)
+				continue;
+			BooleanValue qcnOn;
+			dev->GetAttribute("QcnEnabled", qcnOn);
+			std::cout << "node id " << node->GetId()
+			          << " dev " << j
+			          << " QcnEnabled=" << qcnOn.Get()
+			          << std::endl;
+		}
+	}
+	//////////////////////////=====================
 	#endif
 
 	// set ACK priority on hosts

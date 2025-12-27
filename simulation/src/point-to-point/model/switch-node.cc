@@ -10,7 +10,10 @@
 #include "qbb-net-device.h"
 #include "ppp-header.h"
 #include "ns3/int-header.h"
+#include "ns3/log.h" // lty added: 使用 NS_LOG 记录调试信息
 #include <cmath>
+#include <iostream> // lty added: 调试时输出队列长度
+#include "ns3/simulator.h" // lty added: 调试日志打印仿真时间
 
 namespace ns3 {
 
@@ -197,11 +200,30 @@ void SwitchNode::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Pack
 	p->PeekPacketTag(t);
 	if (qIndex != 0){
 		uint32_t inDev = t.GetFlowId();
+		// lty added: 记录 Remove 操作前的队列长度及阈值
+		uint32_t egressBefore = m_mmu->egress_bytes[ifIndex][qIndex];
+            std::cout << "lty added: switch=" << GetId() << " inDev=" << inDev
+                    << " ifIndex=" << ifIndex << " qIndex=" << qIndex
+                    << " egress_before=" << egressBefore
+                    << " kmin=" << m_mmu->kmin[ifIndex]
+                    << " kmax=" << m_mmu->kmax[ifIndex]
+                    << " ts=" << Simulator::Now().GetTimeStep() << std::endl;
 		m_mmu->RemoveFromIngressAdmission(inDev, qIndex, p->GetSize());
 		m_mmu->RemoveFromEgressAdmission(ifIndex, qIndex, p->GetSize());
+		// lty added: 记录 Remove 后的队列长度
+		uint32_t egressAfter = m_mmu->egress_bytes[ifIndex][qIndex];
+            std::cout << "lty added: switch=" << GetId() << " inDev=" << inDev
+                    << " ifIndex=" << ifIndex << " qIndex=" << qIndex
+                    << " egress_after=" << egressAfter
+                    << " ts=" << Simulator::Now().GetTimeStep() << std::endl;
 		m_bytes[inDev][ifIndex][qIndex] -= p->GetSize();
 		if (m_ecnEnabled){
+			// lty added: 记录调用 ShouldSendCN 的时机
+                std::cout << "lty added: switch=" << GetId() << " ifIndex=" << ifIndex
+                        << " qIndex=" << qIndex << " invoke ShouldSendCN" << std::endl;
 			bool egressCongested = m_mmu->ShouldSendCN(ifIndex, qIndex);
+                std::cout << "lty added: switch=" << GetId() << " ifIndex=" << ifIndex
+                        << " qIndex=" << qIndex << " ShouldSendCN result=" << egressCongested << std::endl;
 			if (egressCongested){
 				PppHeader ppp;
 				Ipv4Header h;

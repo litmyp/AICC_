@@ -214,7 +214,8 @@ class NS3Env(gym.Env):
             print(f"calculate_reward: 非法rtt差值 dr={dr}, 使用仅基于cnp的惩罚")
             return -cnp * 1.0
         diff = dr / dt
-        reward = -diff * 0.1 - cnp * 1.0
+        # reward = -diff *  - cnp * 1.0 # 求导
+        reward = -dr * 0.1 -cnp * 1.0 #做差
         
         return reward
     

@@ -38,7 +38,8 @@ namespace ns3 {
 			.AddConstructor<BEgressQueue>()
 			.AddAttribute("MaxBytes",
 				"The maximum number of bytes accepted by this BEgressQueue.",
-				DoubleValue(1000.0 * 1024 * 1024),
+				//DoubleValue(1000.0 * 1024 * 1024),
+				DoubleValue(64.0 * 1024 * 1024), //lty modified
 				MakeDoubleAccessor(&BEgressQueue::m_maxBytes),
 				MakeDoubleChecker<double>())
 			.AddTraceSource ("BeqEnqueue", "Enqueue a packet in the BEgressQueue. Multiple queue",
