@@ -15,22 +15,22 @@ import pdb
 class NS3Env(gym.Env):
     # 自定义环境类
     
-    def __init__(self, min_action=1.0, max_action=100.0, action_dim=1, max_steps=1000):
+    def __init__(self, min_action=0.1, max_action=1.8, action_dim=1, max_steps=1000, link_capacity_bps=100e9):
         super().__init__()
         
-        # 1. 定义状态空间：rtt纳秒、cnp标记位、timestamp_ns（由共享内存提供）
+        # 1. 定义状态空间：rtt纳秒、cnp标记位、timestamp_ns、qp当前速率（Gbps）
         # 保持与共享内存一致的精度（rtt_ns/ timestamp_ns 为 uint64）
         self.observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
-            shape=(3,),  # rtt, cnp, timestamp_ns
+            shape=(4,),  # rtt, cnp, timestamp_ns, qp_rate
             dtype=np.float64
         )
         
-        # 2. 定义动作空间为发送速率
+        # 2. 定义动作空间为“速率调节信号”：[-1, 1] 之间，<0 表示降速，>0 表示升速
         self.action_space = spaces.Box(
-            low=min_action,
-            high=max_action,
+            low=-1.0,
+            high=1.0,
             shape=(action_dim,),  # action_dim 由参数传入， 其实就是1
             dtype=np.float32
         )
@@ -50,6 +50,8 @@ class NS3Env(gym.Env):
         self.max_steps = max_steps
         self.min_action = min_action
         self.max_action = max_action
+        # lty added: 链路带宽（用于 util 计算，默认 100Gbps，可按拓扑调整）
+        self.link_capacity_bps = link_capacity_bps
     
     def _wait_for_new_data(self):
         """
@@ -105,63 +107,56 @@ class NS3Env(gym.Env):
 
         if data is None:
             # 如果读取失败（共享内存可能还未创建或被销毁），返回零值
-            return np.array([0.0, 0.0, 0.0], dtype=np.float32)
+            return np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float64)
         
         # 提取RTT、CNP以及timestamp（纳秒）
         # 直接保持双精度，避免 uint64 时间戳精度丢失
         rtt_ns = np.float64(data.rtt_ns)  # 纳秒
         cnp = np.float64(data.cnp)
         timestamp_ns = np.float64(getattr(data, "timestamp_ns", 0))
+        qp_rate = np.float64(getattr(data, "qp_rate", 0.0))  # 当前QP速率（Gbps）
         
-        observation = np.array([rtt_ns, cnp, timestamp_ns], dtype=np.float64)
+        observation = np.array([rtt_ns, cnp, timestamp_ns, qp_rate], dtype=np.float64)
         return observation
     
     def clip_action(self, action):
         """
-        将action平滑映射到有效范围内（min_action到max_action之间）
-        使用tanh函数进行平滑映射，避免粗暴截断
-        
-        Args:
-            action: 原始动作值，可以是numpy数组或标量
-            
-        Returns:
-            numpy.ndarray: 映射后的动作值（保持与输入相同的格式）
+        将模型输出的调节信号（-1~1）映射到乘法系数：
+        - 0 表示保持速率不变（系数 1.0）
+        - 正值线性升速，1.0 对应 max_action
+        - 负值线性降速，-1.0 对应 min_action
         """
-        # 提取动作值（如果是数组，取第一个元素）
         if isinstance(action, np.ndarray):
-            raw_rate = float(action[0])
-            # 使用tanh进行平滑映射
-            # 假设输入范围大致在[-max_action, max_action]，先归一化到[-1, 1]
-            # 使用缩放因子确保tanh能充分利用输入范围
-            scale_factor = self.max_action  # 可根据实际情况调整
-            normalized = np.tanh(raw_rate / scale_factor)  # 映射到 [-1, 1]
-            # 将[-1, 1]线性映射到[min_action, max_action]
-            rate = self.min_action + (normalized + 1.0) / 2.0 * (self.max_action - self.min_action)
-            print(f"原始rate: {raw_rate:.4f} Gbps, 归一化后: {normalized:.4f}, 映射后rate: {rate:.4f} Gbps")
-            # 返回相同格式的数组
-            return np.array([rate], dtype=action.dtype)
+            raw_val = float(action[0])
         else:
-            raw_rate = float(action)
-            # 使用tanh进行平滑映射
-            scale_factor = self.max_action
-            normalized = np.tanh(raw_rate / scale_factor)
-            rate = self.min_action + (normalized + 1.0) / 2.0 * (self.max_action - self.min_action)
-            print(f"原始rate: {raw_rate:.4f} Gbps, 归一化后: {normalized:.4f}, 映射后rate: {rate:.4f} Gbps")
-            return rate
+            raw_val = float(action)
+
+        # 平滑压缩到 [-1, 1]
+        normalized = np.tanh(raw_val)
+        if normalized >= 0:
+            coeff = 1.0 + normalized * (self.max_action - 1.0)
+        else:
+            coeff = 1.0 + normalized * (1.0 - self.min_action)  # normalized 为负，降低到 min_action
+
+        print(f"原始输出: {raw_val:.4f}, 归一化: {normalized:.4f}, 乘法系数: {coeff:.4f}")
+
+        if isinstance(action, np.ndarray):
+            return np.array([coeff], dtype=action.dtype)
+        return coeff
     
-    def _update_action(self, action): # 将发送速率写回ns3，变量是float类型，单位为Gbps
+    def _update_action(self, action): # lty added: 将乘法系数写回ns3，供仿真端按倍数更新速率
         meta = self._last_data
         if meta is not None:
             print(
-                f"推理得到的action是: {action} Gbps (node_id={meta.node_id}, "
+                f"推理得到的乘法系数: {action} (node_id={meta.node_id}, "
                 f"sequence={meta.sequence}, timestamp_ns={meta.timestamp_ns})"
             )
         else:
-            print(f"推理得到的action是: {action} Gbps (元数据未知)")
+            print(f"推理得到的乘法系数: {action} (元数据未知)")
 
-        # 提取动作值（如果是数组，取第一个元素；此时action已经是clip后的）
-        rate = float(action[0]) if isinstance(action, np.ndarray) else float(action)
-        # 使用与状态共享内存相同的共享内存（发送速率写在cnp后面的padding区域）
+        # 提取动作值（如果是数组，取第一个元素；此时action已经是clip后的系数）
+        coeff = float(action[0]) if isinstance(action, np.ndarray) else float(action)
+        # 使用与状态共享内存相同的共享内存（发送速率写在padding末尾的保留空间）
         shm_path = f"/dev/shm{SHM_NAME}"
         
         try:
@@ -177,14 +172,9 @@ class NS3Env(gym.Env):
                 self.action_shm_mmap = mmap.mmap(shm_fd.fileno(), shm_size, access=mmap.ACCESS_WRITE)
                 shm_fd.close()
             
-            # 计算发送速率在共享内存中的偏移量（在cnp字段之后，padding区域的开头）
-            # cnp字段偏移量 + cnp字段大小 = 48 + 1 = 49字节
-            cnp_offset = RttShmData.cnp.offset
-            cnp_size = ctypes.sizeof(ctypes.c_uint8)
-            rate_offset = cnp_offset + cnp_size  # 49字节
-            
-            # 写入速率值（使用struct.pack将float转换为4字节）
-            ctypes.c_float.from_buffer(self.action_shm_mmap, rate_offset).value = float(rate)
+            # lty added: 写入速率乘法系数（float，仿真端按 m_rate * coeff 更新速率）
+            data_view = RttShmData.from_buffer(self.action_shm_mmap)
+            data_view.rate_coeff = float(coeff)
             self.action_shm_mmap.flush()
             
         except Exception as e:
@@ -192,32 +182,72 @@ class NS3Env(gym.Env):
             print(f"写入动作共享内存时出错: {e}")
     
     def _calculate_reward(self, state, next_state): #计算reward TODO: 根据实际需求调整奖励函数
+        beta = 1.5
+        target = 0.064
+        scale = 12.5 # 以上三个数值可能需要调整
 
-        # rtt_ns = state[0]
-        cnp = state[1] 
-        # rtt_penalty = -rtt_ns * 1e-7  # 1e-7 = 0.1 / 1000000，保持与毫秒版本相同的比例
-        # cnp_penalty = -cnp * 1.0  # CNP=1时惩罚-1.0，CNP=0时无惩罚
-        
-        # reward = rtt_penalty + cnp_penalty
-        next_rtt = next_state[0]
-        pre_rtt = state[0]
-        dt = next_state[2] - state[2]
-        #print(f"计算奖励函数时，打印时间戳,旧的是{state[2]} 新的是{next_state[2]}")
-        #pdb.set_trace()
-        # 防止时间戳无效或为0导致除零/NaN
-        if not np.isfinite(dt) or dt == 0:
-            print(f"calculate_reward: 非法时间差 dt={dt}, 使用仅基于cnp的惩罚")
-            pdb.set_trace()
-            return -cnp * 1.0
-        dr = next_rtt - pre_rtt
-        if not np.isfinite(dr):
-            print(f"calculate_reward: 非法rtt差值 dr={dr}, 使用仅基于cnp的惩罚")
-            return -cnp * 1.0
-        diff = dr / dt
-        # reward = -diff *  - cnp * 1.0 # 求导
-        reward = -dr * 0.1 -cnp * 1.0 #做差
-        
+        base_rtt = 6000 # 暂定且写死，保留了一定的余量
+
+        rtt_inflation = state[0] / base_rtt # 此处的rtt_inf是相对于basertt的，不是两个状态间的rtt变化
+        rtt_inflation = max(rtt_inflation - beta, 0)
+        reward = rtt_inflation * np.sqrt(state[3])
+        reward = (reward - target) * scale
+
         return reward
+        # # 四项线性组合：cnp惩罚、rtt绝对值惩罚、rtt趋势（下降奖励/上升惩罚）、带宽利用率奖励
+        # a = 1.0 
+        # b = 0.1
+        # c = 4.0
+        # d = 0.008
+
+        # pre_rtt_ns = state[0]
+        # next_rtt_ns = next_state[0]
+        # cnp = next_state[1] if len(next_state) >= 2 else 0.0
+
+        # dt_ns = next_state[2] - state[2] if len(state) >= 3 and len(next_state) >= 3 else np.nan
+        # dt_sec = dt_ns * 1e-9 if np.isfinite(dt_ns) and dt_ns > 0 else None
+
+        # dr_ms = (next_rtt_ns - pre_rtt_ns) * 1e-6 if np.isfinite(pre_rtt_ns) and np.isfinite(next_rtt_ns) else 0.0
+
+        # # 计算带宽利用率
+        # util = 0.0
+        # if (
+        #     dt_sec is not None
+        #     and len(state) >= 4
+        #     and len(next_state) >= 4
+        #     and np.isfinite(state[3])
+        #     and np.isfinite(next_state[3])
+        # ):
+        #     delta_bytes = next_state[3] - state[3]
+        #     if delta_bytes > 0:
+        #         util = (delta_bytes * 8.0) / (dt_sec * self.link_capacity_bps)
+
+
+        # base_rtt_ns = 4160 # 这里先写死
+        # k_abs = 1.0  # tanh 斜率控制
+
+        # if np.isfinite(next_rtt_ns) and base_rtt_ns > 0:
+        #     rtt_abs = next_rtt_ns / base_rtt_ns
+        #     rtt_abs_term = - b * np.tanh((rtt_abs - 1.0) * k_abs)  # RTT 绝对值项（tanh 有界）
+        # else:
+        #     rtt_abs_term = 0.0
+        
+
+        # cnp_term = -a * cnp if np.isfinite(cnp) else 0.0 #cnp
+        # trend_term = -c * dr_ms #rtt增减
+        # util_target = 0.8  # util 达到该目标及以上给正反馈，低于则负反馈
+        # util_term = d * (min(util, 1.0) - util_target)  #带宽利用率
+
+        # # RTT 趋势：使用 dr/dt_ns，并用 tanh 限幅
+        # k_trend = 0.1  # 控制坡度
+        # if np.isfinite(dt_ns) and dt_ns > 0 and np.isfinite(pre_rtt_ns) and np.isfinite(next_rtt_ns):
+        #     dr_dt_ns = (next_rtt_ns - pre_rtt_ns) / dt_ns  # 相对变化率（单位约消掉）
+        #     trend_term = -c * np.tanh(dr_dt_ns * k_trend)
+        # else:
+        #     trend_term = 0.0
+
+        # reward = cnp_term + rtt_abs_term + trend_term + util_term
+        # return reward
     
     def reset(self, seed=None, options=None): #重置环境，开始新的episode
         # 调用父类的reset方法（设置随机种子）

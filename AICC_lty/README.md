@@ -3,6 +3,9 @@
 - temp_py.txt:记录执行python程序后的输出信息
 - DDPG_base.py:原始版的ddpg算法，参考的csdn开源实现
 - NS3Env.py：把ns3建模为environment
+- process_temp_rates.py：把simulation/temp.txt中的速率变化整理成折线
+
+
 - action_plot4flows.png:四条流
     4
     2  1 3 100 5000000 2
@@ -32,3 +35,6 @@
 - action_plot_timely_11.png
 - action_plot_timely_10.png
 - action_plot_timely_00.png
+
+
+

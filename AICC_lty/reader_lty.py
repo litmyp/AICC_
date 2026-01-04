@@ -31,7 +31,11 @@ class RttShmData(ctypes.Structure):
         ("rtt_ns", c_uint64),         
         ("timestamp_ns", c_uint64),   
         ("cnp",c_uint8),
-        ("padding", c_char * 63),     
+        ("_pad3", c_uint8 * 3),
+        ("qp_rate", ctypes.c_float),   # 当前QP速率（Gbps）
+        ("reserved", c_char * 48),
+        ("rate_coeff", ctypes.c_float),  # 速率乘法系数
+        ("padding2", c_char * 4),
     ]
 
 
@@ -136,7 +140,9 @@ def monitor_rtt(interval=0.01, max_iterations=None):
                       f"ACK序列: {data.ack_seq} | "
                       f"RTT: {data.rtt_ns} ns ({rtt_ms:.3f} ms) | "
                       f"CNP: {data.cnp} | "
-                      f"时间戳: {timestamp_ms:.3f} ms")
+                      f"时间戳: {timestamp_ms:.3f} ms | "
+                      f"QP速率: {data.qp_rate:.3f} Gbps | "
+                      f"乘法系数: {data.rate_coeff:.3f}")
                 
                 last_version = current_version
                 iteration += 1
@@ -179,4 +185,3 @@ def monitor_rtt(interval=0.01, max_iterations=None):
 if __name__ == "__main__":
     interval = 0.001  # 默认1ms检查间隔
     monitor_rtt(interval=interval)
-

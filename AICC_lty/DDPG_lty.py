@@ -126,6 +126,8 @@ class DDPGAgent:
             self.state_scale[1] = 1.0  # cnp: 0/1 保持不变
         if state_dim >= 3:
             self.state_scale[2] = 1e9  # timestamp: ns -> 秒量级
+        if state_dim >= 4:
+            self.state_scale[3] = 1e2  # qp_rate: 0.1~100 Gbps -> 缩到 ~1（最大约=1，最小约=1e-3）
 
     def _normalize_state(self, state):
         """
@@ -342,7 +344,7 @@ class DDPGAgent:
 # 绘制学习曲线的方法
 import matplotlib.pyplot as plt
  
-def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=0.001, 
+def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=0.1, 
                model_save_dir="./models", load_model_path=None, save_frequency=100, batch_size=64,
                train_frequency=1):
     """
@@ -365,7 +367,7 @@ def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=
     env = NS3Env(**env_kwargs)
     state_dim = env.observation_space.shape[0]  # 状态空间维度
     action_dim = env.action_space.shape[0]  # 动作空间维度
-    max_action = float(env.action_space.high[0])  # 动作最大值（单位：Gbps）
+    max_action = float(env.action_space.high[0])  # 动作最大值（速率乘法系数上限，默认为1.8）
 
     # 初始化DDPG智能体
     agent = DDPGAgent(state_dim, action_dim, max_action, batch_size=batch_size)
@@ -397,12 +399,12 @@ def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=
             writer = csv.writer(f)
             writer.writerow(["episode", "reward", "avg_reward_last_10"])
 
-    # 动作日志，便于按 node_id 观察动作随时间变化
+    # 动作日志，便于按 node_id 观察动作随时间变化（记录乘法系数）
     action_log_path = os.path.join(model_save_dir, "action_log.csv") if model_save_dir else "action_log.csv"
     # 每次训练开始时清理旧数据，重新创建文件并写入表头
     with open(action_log_path, mode="w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["step", "episode", "node_id", "sequence", "timestamp_ns", "action_gbps"])
+        writer.writerow(["step", "episode", "node_id", "sequence", "timestamp_ns", "action_coeff", "action_gbps"])  # lty added: 记录乘法系数及对应速率
 
     def _extract_env_meta(env_obj):
         """
@@ -435,12 +437,15 @@ def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=
             # 选择动作
             noise_std = exploration_noise * agent.max_action if exploration_noise else 0.0
             action = agent.select_action(state, noise_std=noise_std)            
-            # 在推理后立即限制action到有效范围内（1-100 Gbps）
+            # 在推理后立即限制action到有效范围内（0.1~1.8 的速率乘法系数） lty added
             action = env.clip_action(action)
 
             # 记录动作日志（按 node_id / timestamp）
             if current_node_id is not None:
                 try:
+                    action_coeff = float(np.array(action).flatten()[0])
+                    # 假设动作系数按链路带宽缩放，得到速率（Gbps）；如需改为其它基准，请调整 link_capacity_bps
+                    action_gbps = action_coeff * (env.link_capacity_bps / 1e9)
                     with open(action_log_path, mode="a", newline="", encoding="utf-8") as f:
                         writer = csv.writer(f)
                         writer.writerow([
@@ -449,7 +454,8 @@ def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=
                             current_node_id,
                             current_sequence,
                             state[2] if len(state) >= 3 else None,
-                            float(np.array(action).flatten()[0]),
+                            action_coeff,
+                            action_gbps,
                         ])
                         f.flush()  # 确保数据立即写入磁盘
                 except Exception as e:

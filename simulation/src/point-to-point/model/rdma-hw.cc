@@ -1183,13 +1183,11 @@ void RdmaHw::ReadRate(){
                return;
        }
 
-       // 读取padding区域中Python写入的float类型发送速率（单位：Mbps）
-       float rate_mbps = -1.0f;
-       static_assert(sizeof(data->padding) >= sizeof(float), "padding too small for rate");
-       std::memcpy(&rate_mbps, data->padding, sizeof(float));
+       // lty added: 读取乘法系数（默认-1表示未更新）
+       float rate_coeff = data->rate_coeff;
 
-       // 如果速率是-1，说明还没有更新，直接返回
-       if (rate_mbps == -1.0f) {
+       // 如果系数是-1，说明还没有更新，直接返回 lty added
+       if (rate_coeff == -1.0f) {
                return;
        }
 
@@ -1204,12 +1202,12 @@ void RdmaHw::ReadRate(){
                  << "RTT: " << data->rtt_ns << " ns (" << rtt_ms << " ms) | "
                  << "CNP: " << static_cast<uint32_t>(data->cnp) << " | "
                  << "时间戳: " << data->timestamp_ns << " ns | "
-                 << "发送速率: " << rate_mbps << " Mbps"
+                 << "QP速率(Gbps): " << data->qp_rate << " | "
+                 << "速率乘法系数: " << rate_coeff
                  << std::endl;
        
        // 读取后将速率重置为-1，便于下一轮检测
-       float reset_rate = -1.0f;
-       std::memcpy(data->padding, &reset_rate, sizeof(float));
+       data->rate_coeff = -1.0f;
 }
 
 
@@ -1242,7 +1240,8 @@ void RdmaHw::HandleAckMySelf(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader 
 			ShmManager::WriteRtt(m_node->GetId(), 
 			                     qp->sip.Get(), qp->sport,
 			                     qp->dip.Get(), qp->dport,
-			                     ack_seq, rtt_ns, current_time, cnp);
+			                     ack_seq, rtt_ns, current_time, cnp,
+			                     static_cast<float>(qp->m_rate.GetBitRate() * 1e-9));
 			//加一下记录
 			std::cout<<"在时刻:"<<current_time<<"执行一次对共享内存的写入"<<std::endl;
 
@@ -1255,36 +1254,37 @@ void RdmaHw::HandleAckMySelf(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader 
 				return; // lty
 			}
 
-			float rate_mbps = -1.0f;
-			while (true) { // lty: 轮询直到rate被写入
-				std::memcpy(&rate_mbps, data->padding, sizeof(float));
-				if (rate_mbps != -1.0f) {
-					break; // lty: rate已更新
-				}
-				std::this_thread::sleep_for(std::chrono::milliseconds(1)); // lty: 1ms 间隔轮询
-			}
+            float rate_coeff = -1.0f;
+            while (true) { // lty: 轮询直到系数被写入
+                rate_coeff = data->rate_coeff;
+                if (rate_coeff != -1.0f) {
+                    break; // lty: rate已更新
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(1)); // lty: 1ms 间隔轮询
+            }
 
-			// 先打印旧速率
-			std::cout<<"旧速率为:"<<qp->m_rate.GetBitRate()*1e-9 <<"Gb"<<std::endl;
-			// lty: 读取并打印速率信息，同时将速率重置为-1，方便下一轮检测
-			ReadRate();
+            // 先打印旧速率
+            std::cout<<"旧速率为:"<<qp->m_rate.GetBitRate()*1e-9 <<"Gb"<<std::endl;
+            // lty: 读取并打印速率信息，同时将速率重置为-1，方便下一轮检测
+            ReadRate();
 
-			// lty: 将Python写入的速率（Gbps）转换为DataRate并作用到当前QP
-			if (rate_mbps > 0.0f) {
-				uint64_t rate_bps = static_cast<uint64_t>(rate_mbps * 1e9); // Gbps -> bps
-				DataRate new_rate(rate_bps);
-				if (new_rate > qp->m_max_rate) {
-					new_rate = qp->m_max_rate;
-				}
-				if (new_rate < m_minRate) {
-					new_rate = m_minRate;
-				}
-				std::cout << "My CC: 将速率更新为 " << new_rate.GetBitRate() * 1e-9 << " Gb/s" << std::endl;
-				ChangeRate(qp, new_rate);
-				std::cout<<"执行速率变更,更新后的速率为:"<<qp->m_rate.GetBitRate()*1e-9 <<"Gb"<<std::endl;
-			} else {
-				std::cout << "My CC: 收到无效速率 " << rate_mbps << "，保持原速率" << std::endl;
-			}
+            // lty added: 将Python写入的乘法系数作用到当前速率，范围已在Python侧限制为[0.1,1.8]
+            if (rate_coeff > 0.0f) {
+                double coeff = static_cast<double>(rate_coeff);
+                double target_bps = qp->m_rate.GetBitRate() * coeff;
+                DataRate new_rate(static_cast<uint64_t>(target_bps));
+                if (new_rate > qp->m_max_rate) {
+                    new_rate = qp->m_max_rate;
+                }
+                if (new_rate < m_minRate) {
+                    new_rate = m_minRate;
+                }
+                std::cout << "My CC: 乘法系数 " << coeff << " -> 新速率 " << new_rate.GetBitRate() * 1e-9 << " Gb/s" << std::endl; // lty added
+                ChangeRate(qp, new_rate);
+                std::cout<<"执行速率变更,更新后的速率为:"<<qp->m_rate.GetBitRate()*1e-9 <<"Gb"<<std::endl;
+            } else {
+                std::cout << "My CC: 收到无效系数 " << rate_coeff << "，保持原速率" << std::endl;
+            }
 		}
 	}
 	
@@ -1316,7 +1316,7 @@ void RdmaHw::HandleAckDebug(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &
 	std::cout << "  Timestamp: " << current_time << " ns" << std::endl;
 	std::cout << "  CNP标志位: " << static_cast<int>(cnp) << (cnp ? " (拥塞)" : " (无拥塞)") << std::endl;
 	
-	std::cout<<"通过键盘键入接下来的发送速率(Gbps): ";
+			std::cout<<"通过键盘键入接下来的发送速率(Gbps): ";
 	
 	float rate_gbps;
 	std::cin >> rate_gbps;
@@ -1383,14 +1383,14 @@ void ShmManager::InitShm() {
 	rtt_data->sequence.store(0);
 	
 	// 初始化速率为-1，表示尚未更新
-	float init_rate = -1.0f;
-	std::memcpy(rtt_data->padding, &init_rate, sizeof(float));
+	rtt_data->rate_coeff = -1.0f;
+	rtt_data->qp_rate = 0.0f;
 }
 
 //lty 写RTT信息和CNP标记位的函数实现
 void ShmManager::WriteRtt(uint32_t node_id, uint32_t sip, uint16_t sport, 
 	uint32_t dip, uint16_t dport, uint32_t ack_seq, 
-	uint64_t rtt_ns, uint64_t timestamp_ns, uint8_t cnp) {
+	uint64_t rtt_ns, uint64_t timestamp_ns, uint8_t cnp, float qp_rate) {
 		
 	RttShmData* data = GetShm();
 	if (data == nullptr || data == MAP_FAILED) {
@@ -1407,6 +1407,7 @@ void ShmManager::WriteRtt(uint32_t node_id, uint32_t sip, uint16_t sport,
 	data->rtt_ns = rtt_ns;
 	data->cnp = cnp;
 	data->timestamp_ns = timestamp_ns;
+	data->qp_rate = qp_rate;
 	// lty: 更新序列号（针对每个node_id单独计数）
 	// 获取或创建该node_id的计数器，然后递增
 	uint64_t seq;

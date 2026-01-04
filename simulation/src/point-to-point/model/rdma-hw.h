@@ -37,7 +37,11 @@ struct RttShmData {
 	uint64_t rtt_ns;
 	uint64_t timestamp_ns;
 	uint8_t cnp;  
-	char padding[63];  // 填充到缓存行大小，避免false sharing（调整为63以保持总大小不变）
+	uint8_t padding1[3]; // 对齐
+	float qp_rate;       // 当前QP速率（Gbps）
+	char reserved[48];   // 预留空间（保持后续字段偏移）
+	float rate_coeff;    // 速率乘法系数，-1 表示未更新
+	char padding2[4];    // 填充到 112 字节
 };
 
 //lty:定义共享内存管理类
@@ -61,12 +65,13 @@ class ShmManager {
 		}
 
 		static const char* GetShmName() {
-			return SHM_NAME;
-		}
+		return SHM_NAME;
+	}
 		
-		static void WriteRtt(uint32_t node_id, uint32_t sip, uint16_t sport, 
-							 uint32_t dip, uint16_t dport, uint32_t ack_seq, 
-							 uint64_t rtt_ns, uint64_t timestamp_ns, uint8_t cnp);//写入rtt信息和cnp标记位
+	static void WriteRtt(uint32_t node_id, uint32_t sip, uint16_t sport, 
+						 uint32_t dip, uint16_t dport, uint32_t ack_seq, 
+						 uint64_t rtt_ns, uint64_t timestamp_ns, uint8_t cnp,
+						 float qp_rate);//写入rtt信息和cnp标记位
 };
 //======================================分割线
 
