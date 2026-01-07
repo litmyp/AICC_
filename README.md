@@ -1,22 +1,31 @@
-# HPCC simulation
-[Project page of HPCC](https://hpcc-group.github.io/) includes latest news of HPCC and extensive evaluation results using this simulator.
+# RDMA-AICC
 
-This is the simulator for [HPCC: High Precision Congestion Control (SIGCOMM' 2019)](https://rmiao.github.io/publications/hpcc-li.pdf). It also includes the implementation of DCQCN, TIMELY, DCTCP, PFC, ECN and Broadcom shared buffer switch.
+## Overview
+本项目在HPCC的开源代码(./simulation)的基础上，将网络通信建模为环境，并用强化学习算法(./AICC_lty)来设计拥塞控制算法。
 
-We have update this simulator to support HPCC-PINT, which reduces the INT header overhead to 1 to 2 byte. This improves the long flow completion time. See [PINT: Probabilistic In-band Network Telemetry (SIGCOMM' 2020)](https://liyuliang001.github.io/publications/pint.pdf).
+## Usage
+### 启动仿真
+1. cd ./simulation
+2. conda activate ns317
+3. ./waf --run "scratch/third_lty mix/config_lty.txt" >temp.txt
 
-## NS-3 simulation
-The ns-3 simulation is under `simulation/`. Refer to the README.md under it for more details.
+### 启动RL
+0. 保证仿真启动后，再启动RL
+1. cd ./AICC_lty
+2. python DDPG_lty.py >temp_py.txt
+3. 仿真结束后,ctrl+c退出
 
-## Traffic generator
-The traffic generator is under `traffic_gen/`. Refer to the README.md under it for more details.
+### 绘图
+- python ./AICC_lty/process_temp_rates.py
 
-## Analysis
-We provide a few analysis scripts under `analysis/` to view the packet-level events, and analyzing the fct in the same way as [HPCC](https://liyuliang001.github.io/publications/hpcc.pdf) Figure 11.
-Refer to the README.md under it for more details.
+## 核心设计
+### 拥塞控制协议的核心实现
+- 在rdma-hw.cc rdma-hw.h实现仿真端的拥塞控制算法、共享内存的创建与读写
+- 仿真主程序：third_lty.cc
+- 仿真配置文件：config_lty.txt (变量解读参考config_doc.txt)
 
-## Questions
-For technical questions, please create an issue in this repo, so other people can benefit from your questions. 
-You may also check the issue list first to see if people have already asked the questions you have :)
-
-For other questions, please contact Rui Miao (miao.rui@alibaba-inc.com).
+### 强化学习的核心实现
+- reader_lty.py:实现RL端对共享内存的读写
+- NS3Env.py:将仿真器建模为强化学习中的环境，包括计算奖励值等
+- DDPG_lty.py:模型的定义与DDPG算法的实现、ReplayBuffer的实现、训练推理全流程
+- process_temp_rates.py:从temp.txt中读取节点id、时间戳、速率信息，绘图

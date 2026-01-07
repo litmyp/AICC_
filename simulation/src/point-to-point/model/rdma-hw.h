@@ -40,7 +40,7 @@ struct RttShmData {
 	uint8_t padding1[3]; // 对齐
 	float qp_rate;       // 当前QP速率（Gbps）
 	char reserved[48];   // 预留空间（保持后续字段偏移）
-	float rate_coeff;    // 速率乘法系数，-1 表示未更新
+	float new_rate;      // lty added: 目标速率（Gbps），-1 表示未更新
 	char padding2[4];    // 填充到 112 字节
 };
 

@@ -34,7 +34,7 @@ class RttShmData(ctypes.Structure):
         ("_pad3", c_uint8 * 3),
         ("qp_rate", ctypes.c_float),   # 当前QP速率（Gbps）
         ("reserved", c_char * 48),
-        ("rate_coeff", ctypes.c_float),  # 速率乘法系数
+        ("new_rate", ctypes.c_float),  # lty added: 目标速率（Gbps），-1 表示未更新
         ("padding2", c_char * 4),
     ]
 
@@ -142,7 +142,7 @@ def monitor_rtt(interval=0.01, max_iterations=None):
                       f"CNP: {data.cnp} | "
                       f"时间戳: {timestamp_ms:.3f} ms | "
                       f"QP速率: {data.qp_rate:.3f} Gbps | "
-                      f"乘法系数: {data.rate_coeff:.3f}")
+                      f"new_rate: {data.new_rate:.3f} Gbps")  # lty added: 打印目标速率
                 
                 last_version = current_version
                 iteration += 1

@@ -43,6 +43,7 @@ using namespace std;
 NS_LOG_COMPONENT_DEFINE("GENERIC_SIMULATION");
 
 uint32_t cc_mode = 1;
+uint32_t cc_mode_node2 = 16; // 节点2可单独指定的拥塞控制模式
 bool enable_qcn = true, use_dynamic_pfc_threshold = true;
 uint32_t packet_payload_size = 1000, l2_chunk_size = 0, l2_ack_interval = 0;
 double pause_time = 5, simulator_stop_time = 3.01;
@@ -663,6 +664,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	// 默认让节点2的 cc_mode 与全局一致，便于后面单独覆盖
+	// cc_mode_node2 = cc_mode;
+
 
 	bool dynamicth = use_dynamic_pfc_threshold;
 
@@ -865,49 +869,59 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	#if ENABLE_QP
-	FILE *fct_output = fopen(fct_output_file.c_str(), "w");
-	//
-	// install RDMA driver
-	//
-	for (uint32_t i = 0; i < node_num; i++){
-		if (n.Get(i)->GetNodeType() == 0){ // is server
-			// create RdmaHw
-			Ptr<RdmaHw> rdmaHw = CreateObject<RdmaHw>();
-			rdmaHw->SetAttribute("ClampTargetRate", BooleanValue(clamp_target_rate));
-			rdmaHw->SetAttribute("AlphaResumInterval", DoubleValue(alpha_resume_interval));
-			rdmaHw->SetAttribute("RPTimer", DoubleValue(rp_timer));
-			rdmaHw->SetAttribute("FastRecoveryTimes", UintegerValue(fast_recovery_times));
-			rdmaHw->SetAttribute("EwmaGain", DoubleValue(ewma_gain));
-			rdmaHw->SetAttribute("RateAI", DataRateValue(DataRate(rate_ai)));
-			rdmaHw->SetAttribute("RateHAI", DataRateValue(DataRate(rate_hai)));
-			rdmaHw->SetAttribute("L2BackToZero", BooleanValue(l2_back_to_zero));
-			rdmaHw->SetAttribute("L2ChunkSize", UintegerValue(l2_chunk_size));
-			rdmaHw->SetAttribute("L2AckInterval", UintegerValue(l2_ack_interval));
-			rdmaHw->SetAttribute("CcMode", UintegerValue(cc_mode));
-			rdmaHw->SetAttribute("RateDecreaseInterval", DoubleValue(rate_decrease_interval));
-			rdmaHw->SetAttribute("MinRate", DataRateValue(DataRate(min_rate)));
-			rdmaHw->SetAttribute("Mtu", UintegerValue(packet_payload_size));
-			rdmaHw->SetAttribute("MiThresh", UintegerValue(mi_thresh));
-			rdmaHw->SetAttribute("VarWin", BooleanValue(var_win));
-			rdmaHw->SetAttribute("FastReact", BooleanValue(fast_react));
-			rdmaHw->SetAttribute("MultiRate", BooleanValue(multi_rate));
-			rdmaHw->SetAttribute("SampleFeedback", BooleanValue(sample_feedback));
-			rdmaHw->SetAttribute("TargetUtil", DoubleValue(u_target));
-			rdmaHw->SetAttribute("RateBound", BooleanValue(rate_bound));
-			rdmaHw->SetAttribute("DctcpRateAI", DataRateValue(DataRate(dctcp_rate_ai)));
-			rdmaHw->SetPintSmplThresh(pint_prob);
-			// create and install RdmaDriver
-			Ptr<RdmaDriver> rdma = CreateObject<RdmaDriver>();
-			Ptr<Node> node = n.Get(i);
-			rdma->SetNode(node);
-			rdma->SetRdmaHw(rdmaHw);
+		#if ENABLE_QP
+		FILE *fct_output = fopen(fct_output_file.c_str(), "w");
+		Ptr<RdmaHw> node2RdmaHw = nullptr; // 保存节点2的 RdmaHw，便于循环后单独设置 cc_mode
+		//
+		// install RDMA driver
+		//
+		for (uint32_t i = 0; i < node_num; i++){
+			if (n.Get(i)->GetNodeType() == 0){ // is server
+				// create RdmaHw
+				Ptr<RdmaHw> rdmaHw = CreateObject<RdmaHw>();
+				rdmaHw->SetAttribute("ClampTargetRate", BooleanValue(clamp_target_rate));
+				rdmaHw->SetAttribute("AlphaResumInterval", DoubleValue(alpha_resume_interval));
+				rdmaHw->SetAttribute("RPTimer", DoubleValue(rp_timer));
+				rdmaHw->SetAttribute("FastRecoveryTimes", UintegerValue(fast_recovery_times));
+				rdmaHw->SetAttribute("EwmaGain", DoubleValue(ewma_gain));
+				rdmaHw->SetAttribute("RateAI", DataRateValue(DataRate(rate_ai)));
+				rdmaHw->SetAttribute("RateHAI", DataRateValue(DataRate(rate_hai)));
+				rdmaHw->SetAttribute("L2BackToZero", BooleanValue(l2_back_to_zero));
+				rdmaHw->SetAttribute("L2ChunkSize", UintegerValue(l2_chunk_size));
+				rdmaHw->SetAttribute("L2AckInterval", UintegerValue(l2_ack_interval));
+				if (n.Get(i)->GetId() != 2){
+					rdmaHw->SetAttribute("CcMode", UintegerValue(cc_mode));
+				}else{
+					node2RdmaHw = rdmaHw; // 循环结束后单独指定节点2的 cc_mode
+				}
+				rdmaHw->SetAttribute("RateDecreaseInterval", DoubleValue(rate_decrease_interval));
+				rdmaHw->SetAttribute("MinRate", DataRateValue(DataRate(min_rate)));
+				rdmaHw->SetAttribute("Mtu", UintegerValue(packet_payload_size));
+				rdmaHw->SetAttribute("MiThresh", UintegerValue(mi_thresh));
+				rdmaHw->SetAttribute("VarWin", BooleanValue(var_win));
+				rdmaHw->SetAttribute("FastReact", BooleanValue(fast_react));
+				rdmaHw->SetAttribute("MultiRate", BooleanValue(multi_rate));
+				rdmaHw->SetAttribute("SampleFeedback", BooleanValue(sample_feedback));
+				rdmaHw->SetAttribute("TargetUtil", DoubleValue(u_target));
+				rdmaHw->SetAttribute("RateBound", BooleanValue(rate_bound));
+				rdmaHw->SetAttribute("DctcpRateAI", DataRateValue(DataRate(dctcp_rate_ai)));
+				rdmaHw->SetPintSmplThresh(pint_prob);
+				// create and install RdmaDriver
+				Ptr<RdmaDriver> rdma = CreateObject<RdmaDriver>();
+				Ptr<Node> node = n.Get(i);
+				rdma->SetNode(node);
+				rdma->SetRdmaHw(rdmaHw);
 
-			node->AggregateObject (rdma);
-			rdma->Init();
-			rdma->TraceConnectWithoutContext("QpComplete", MakeBoundCallback (qp_finish, fct_output));
+				node->AggregateObject (rdma);
+				rdma->Init();
+				rdma->TraceConnectWithoutContext("QpComplete", MakeBoundCallback (qp_finish, fct_output));
+			}
 		}
-	}
+
+		// 循环外单独为节点2设置 cc_mode
+		if (node2RdmaHw){
+			node2RdmaHw->SetAttribute("CcMode", UintegerValue(cc_mode_node2));
+		}
 
 	// lty added: print QcnEnabled status on switch nodes============
 	for (uint32_t i = 0; i < node_num; i++){

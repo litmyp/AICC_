@@ -28,34 +28,29 @@ class TSP(nn.Module):
 
 # 定义 MLP 全连接网络
 class MLP(nn.Module):
-    def __init__(self, input_dim, hidden_dim=256, output_dim=1, output_activation=None):
+    def __init__(self, input_dim, hidden_dim=256, output_dim=1):
         super(MLP, self).__init__()
         self.linear1 = nn.Linear(input_dim, hidden_dim)
         self.relu = nn.ReLU()
         self.linear2 = nn.Linear(hidden_dim, output_dim)
-        self.output_activation = output_activation
 
     def forward(self, x):
         x = self.linear1(x)
         x = self.relu(x)
         x = self.linear2(x)
-        if self.output_activation is not None:
-            x = self.output_activation(x)
         return x
  
 # 定义 Actor 网络（策略网络）
 class Actor(nn.Module):
-    def __init__(self, state_dim, action_dim, max_action):
+    def __init__(self, state_dim, action_dim):
         super(Actor, self).__init__()
         self.tsp = TSP(state_dim, 256)
         self.mlp = MLP(self.tsp.output_dim, 256, action_dim)
-        self.max_action = max_action
  
     def forward(self, state):
         features = self.tsp(state)
-        action = self.mlp(features)
-        action = torch.tanh(action) * self.max_action
-        return action
+        raw = self.mlp(features)
+        return torch.tanh(raw)
  
 # 定义 Critic 网络（价值网络）
 class Critic(nn.Module):
@@ -90,10 +85,10 @@ class ReplayBuffer:
 # DDPG智能体类定义
 class DDPGAgent:
     # 初始化方法，设置智能体的参数和模型
-    def __init__(self, state_dim, action_dim, max_action, gamma=0.99, tau=0.005, buffer_size=100000, batch_size=64):
+    def __init__(self, state_dim, action_dim, max_action, min_action, gamma=0.99, tau=0.005, buffer_size=100000, batch_size=64):
         # 定义actor网络（策略网络）及其目标网络
-        self.actor = Actor(state_dim, action_dim, max_action)
-        self.actor_target = Actor(state_dim, action_dim, max_action)
+        self.actor = Actor(state_dim, action_dim)
+        self.actor_target = Actor(state_dim, action_dim)
         # 将目标actor网络的参数初始化为与actor网络一致
         self.actor_target.load_state_dict(self.actor.state_dict())
         # 定义actor网络的优化器
@@ -105,10 +100,12 @@ class DDPGAgent:
         # 将目标critic网络的参数初始化为与critic网络一致
         self.critic_target.load_state_dict(self.critic.state_dict())
         # 定义critic网络的优化器
-        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=1e-3)
+        self.critic_optimizer = optim.Adam(self.critic.parameters(), lr=3e-4)# 1e-3有些大，改小一些
  
         # 保存动作的最大值，用于限制动作范围
         self.max_action = max_action
+        self.min_action = min_action  # lty added: 记录动作最小值（Gbps）
+
         # 折扣因子，用于奖励的时间折扣
         self.gamma = gamma
         # 软更新系数，用于目标网络的更新
@@ -151,8 +148,23 @@ class DDPGAgent:
         if noise_std > 0.0:
             noise = np.random.normal(0, noise_std, size=action.shape)
             action = action + noise
-        action = np.clip(action, -self.max_action, self.max_action)
+        # 将动作限制在 [-1, 1] 区间
+        action = np.clip(action, -1.0, 1.0)
         return action
+
+    def action_to_rate(self, action, last_rate):
+        """
+        根据归一化动作与当前发送速率计算新的目标速率。
+        action >= 0: rate = last_rate * (1 + alpha * action)
+        action <  0: rate = last_rate / (1 - alpha * action)
+        """
+        action = np.array(action, dtype=np.float32)
+        alpha = 0.025 #之前是0.1，效果还行，Aurora论文中设置的是0.025
+        # 防止分母过小或为 0，避免数值爆炸
+        denom = 1.0 - alpha * action
+        denom = np.where(np.abs(denom) < 1e-6, np.sign(denom) * 1e-6, denom)
+        rate = np.where(action >= 0, last_rate * (1.0 + alpha * action), last_rate / denom)
+        return np.clip(rate, self.min_action, self.max_action)
  
     # 训练方法
     def train(self):
@@ -288,6 +300,7 @@ class DDPGAgent:
             'actor_optimizer_state_dict': self.actor_optimizer.state_dict(),
             'critic_optimizer_state_dict': self.critic_optimizer.state_dict(),
             'max_action': self.max_action,
+            'min_action': self.min_action,  # lty added: 保存动作最小值
             'gamma': self.gamma,
             'tau': self.tau,
         }
@@ -330,10 +343,14 @@ class DDPGAgent:
             # 加载其他参数（如果存在）
             if 'max_action' in checkpoint:
                 self.max_action = checkpoint['max_action']
+            if 'min_action' in checkpoint:
+                self.min_action = checkpoint['min_action']  # lty added: 恢复动作最小值
             if 'gamma' in checkpoint:
                 self.gamma = checkpoint['gamma']
             if 'tau' in checkpoint:
                 self.tau = checkpoint['tau']
+            # if 'rate_alpha' in checkpoint:
+            #     self.rate_alpha = checkpoint['rate_alpha']
             
             print(f"模型已从 {filepath} 加载")
             return True
@@ -344,7 +361,7 @@ class DDPGAgent:
 # 绘制学习曲线的方法
 import matplotlib.pyplot as plt
  
-def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=0.1, 
+def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=0.05, 
                model_save_dir="./models", load_model_path=None, save_frequency=100, batch_size=64,
                train_frequency=1):
     """
@@ -367,10 +384,11 @@ def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=
     env = NS3Env(**env_kwargs)
     state_dim = env.observation_space.shape[0]  # 状态空间维度
     action_dim = env.action_space.shape[0]  # 动作空间维度
-    max_action = float(env.action_space.high[0])  # 动作最大值（速率乘法系数上限，默认为1.8）
+    max_action = float(env.action_space.high[0])  # 动作最大值（Gbps）
+    min_action = float(env.action_space.low[0])   # lty added: 动作最小值（Gbps）
 
     # 初始化DDPG智能体
-    agent = DDPGAgent(state_dim, action_dim, max_action, batch_size=batch_size)
+    agent = DDPGAgent(state_dim, action_dim, max_action, min_action, batch_size=batch_size)
     
     # 如果提供了模型路径，加载已有模型
     if load_model_path is not None:
@@ -386,25 +404,26 @@ def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=
     
     # 准备损失日志文件路径（可被 Excel 读取的 CSV）
     loss_log_path = os.path.join(model_save_dir, "loss_log.csv") if model_save_dir else "loss_log.csv"
-    # 如果文件不存在，写入表头
-    if not os.path.exists(loss_log_path):
-        with open(loss_log_path, mode="w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["step", "critic_loss", "actor_loss"])
+    # # 如果文件不存在，写入表头（暂时停用日志）
+    # if not os.path.exists(loss_log_path):
+    #     with open(loss_log_path, mode="w", newline="") as f:
+    #         writer = csv.writer(f)
+    #         writer.writerow(["step", "critic_loss", "actor_loss"])
     
     # 准备奖励日志文件路径，记录每个 episode 的奖励变化
     reward_log_path = os.path.join(model_save_dir, "reward_log.csv") if model_save_dir else "reward_log.csv"
-    if not os.path.exists(reward_log_path):
-        with open(reward_log_path, mode="w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["episode", "reward", "avg_reward_last_10"])
+    # # 奖励日志表头初始化（暂时停用）
+    # if not os.path.exists(reward_log_path):
+    #     with open(reward_log_path, mode="w", newline="") as f:
+    #         writer = csv.writer(f)
+    #         writer.writerow(["episode", "reward", "avg_reward_last_10"])
 
-    # 动作日志，便于按 node_id 观察动作随时间变化（记录乘法系数）
+    # 动作日志，便于按 node_id 观察动作随时间变化（记录目标速率） lty added
     action_log_path = os.path.join(model_save_dir, "action_log.csv") if model_save_dir else "action_log.csv"
-    # 每次训练开始时清理旧数据，重新创建文件并写入表头
-    with open(action_log_path, mode="w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(["step", "episode", "node_id", "sequence", "timestamp_ns", "action_coeff", "action_gbps"])  # lty added: 记录乘法系数及对应速率
+    # # 每次训练开始时清理旧数据，重新创建文件并写入表头（暂时停用日志）
+    # with open(action_log_path, mode="w", newline="", encoding="utf-8") as f:
+    #     writer = csv.writer(f)
+    #     writer.writerow(["step", "episode", "node_id", "sequence", "timestamp_ns", "action_gbps"])  # lty added: 记录目标速率
 
     def _extract_env_meta(env_obj):
         """
@@ -435,31 +454,31 @@ def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=
                       f"min={critic_stats_before.get('min', 0):.6f}, max={critic_stats_before.get('max', 0):.6f}")
             
             # 选择动作
-            noise_std = exploration_noise * agent.max_action if exploration_noise else 0.0
-            action = agent.select_action(state, noise_std=noise_std)            
-            # 在推理后立即限制action到有效范围内（0.1~1.8 的速率乘法系数） lty added
-            action = env.clip_action(action)
+            # 高斯噪声
+            #noise_std = exploration_noise if exploration_noise else 0.0
+            noise_std = max(0.01, exploration_noise * (1 - episode / episodes)) # 随着训练过程递减
+            action = agent.select_action(state, noise_std=noise_std)  # 归一化动作 [-1, 1]
+            last_rate = state[3] if len(state) >= 4 else agent.min_action  # 当前状态下的发送速率
+            action_rate = agent.action_to_rate(action, last_rate)  # 映射到环境速率范围
+
 
             # 记录动作日志（按 node_id / timestamp）
-            if current_node_id is not None:
-                try:
-                    action_coeff = float(np.array(action).flatten()[0])
-                    # 假设动作系数按链路带宽缩放，得到速率（Gbps）；如需改为其它基准，请调整 link_capacity_bps
-                    action_gbps = action_coeff * (env.link_capacity_bps / 1e9)
-                    with open(action_log_path, mode="a", newline="", encoding="utf-8") as f:
-                        writer = csv.writer(f)
-                        writer.writerow([
-                            step_count,
-                            episode + 1,
-                            current_node_id,
-                            current_sequence,
-                            state[2] if len(state) >= 3 else None,
-                            action_coeff,
-                            action_gbps,
-                        ])
-                        f.flush()  # 确保数据立即写入磁盘
-                except Exception as e:
-                    print(f"写入动作日志失败: {e}")
+            # if current_node_id is not None:
+            #     try:
+            #         action_gbps = float(np.array(action_rate).flatten()[0])
+            #         with open(action_log_path, mode="a", newline="", encoding="utf-8") as f:
+            #             writer = csv.writer(f)
+            #             writer.writerow([
+            #                 step_count,
+            #                 episode + 1,
+            #                 current_node_id,
+            #                 current_sequence,
+            #                 state[2] if len(state) >= 3 else None,
+            #                 action_gbps,
+            #             ])
+            #             f.flush()  # 确保数据立即写入磁盘
+            #     except Exception as e:
+            #         print(f"写入动作日志失败: {e}")
 
             # 缓存当前node的state/action，等待下一次该node的数据来拼接transition
             if current_node_id is not None:
@@ -474,7 +493,7 @@ def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=
             #pdb.set_trace()
 
             # 执行动作，获取环境反馈（reward 在此暂不使用，稍后重新计算）
-            next_state, reward, done, truncated, _ = env.step(action)
+            next_state, reward, done, truncated, _ = env.step(action_rate)
             next_node_id, next_sequence = _extract_env_meta(env)
 
             # 只有在拿到同一条流下一次的state时才补齐transition
@@ -530,13 +549,13 @@ def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=
                     actor_loss_val = train_result.get('actor_loss', 0.0)
                     print(f"[训练] Step {step_count} - Critic Loss: {critic_loss_val:.6f}, "
                           f"Actor Loss: {actor_loss_val:.6f}")
-                    # 追加写入损失到 CSV，便于 Excel 读取
-                    try:
-                        with open(loss_log_path, mode="a", newline="") as f:
-                            writer = csv.writer(f)
-                            writer.writerow([step_count, critic_loss_val, actor_loss_val])
-                    except Exception as e:
-                        print(f"写入损失日志失败: {e}")
+                    # # 追加写入损失到 CSV，便于 Excel 读取（暂时停用日志）
+                    # try:
+                    #     with open(loss_log_path, mode="a", newline="") as f:
+                    #         writer = csv.writer(f)
+                    #         writer.writerow([step_count, critic_loss_val, actor_loss_val])
+                    # except Exception as e:
+                    #     print(f"写入损失日志失败: {e}")
                     print(f"[训练] Step {step_count} - Q值统计: mean={train_result.get('q_mean', 0):.4f}, "
                           f"std={train_result.get('q_std', 0):.4f}, min={train_result.get('q_min', 0):.4f}, "
                           f"max={train_result.get('q_max', 0):.4f}, target_mean={train_result.get('target_q_mean', 0):.4f}")
@@ -578,12 +597,13 @@ def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=
         avg_reward = np.mean(rewards[-10:]) if len(rewards) >= 10 else np.mean(rewards)
         if episode > 0:
             print(f"  最近10个episode平均奖励: {avg_reward:.4f}")
-        try:
-            with open(reward_log_path, mode="a", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow([episode + 1, episode_reward, avg_reward])
-        except Exception as e:
-            print(f"写入奖励日志失败: {e}")
+        # # 追加写入奖励日志（暂时停用）
+        # try:
+        #     with open(reward_log_path, mode="a", newline="") as f:
+        #         writer = csv.writer(f)
+        #         writer.writerow([episode + 1, episode_reward, avg_reward])
+        # except Exception as e:
+        #     print(f"写入奖励日志失败: {e}")
         print(f"{'='*80}\n")
         
         # 定期保存模型
@@ -597,12 +617,12 @@ def train_ddpg(episodes=1000, max_steps=200, env_kwargs=None, exploration_noise=
         final_model_path = os.path.join(model_save_dir, "ddpg_model_final.pth")
         agent.save(final_model_path)
 
-    # 绘制学习曲线
-    plt.plot(rewards)
-    plt.title("Learning Curve")
-    plt.xlabel("Episodes")
-    plt.ylabel("Cumulative Reward")
-    plt.show()
+    # # 绘制学习曲线（暂时停用，可改为 plt.savefig 再 plt.close 以无界面保存）
+    # plt.plot(rewards)
+    # plt.title("Learning Curve")
+    # plt.xlabel("Episodes")
+    # plt.ylabel("Cumulative Reward")
+    # plt.show()
 
     env.close()  # 关闭环境
  
@@ -618,11 +638,11 @@ if __name__ == "__main__":
     # 如果要加载已有模型，设置模型路径（例如: "./models/ddpg_model_final.pth"）
     load_model_path = "./models/ddpg_model_final.pth"  # 设置为None表示从头开始训练，或提供模型路径继续训练
     # 每隔多少个episode保存一次模型（设置为0表示只在训练结束时保存）
-    save_frequency = 5
+    save_frequency = 10
     # 训练时的批量大小 flow_num*4
-    batch_size = 16
+    batch_size = 128# 16
     # 每隔多少步训练一次（1表示每步都训练，2表示每2步训练一次，以此类推）
-    train_frequency = 10
+    train_frequency = 2 # 从10改到2，
     
     # 开始训练
     train_ddpg(episodes=episodes, 
