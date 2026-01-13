@@ -91,11 +91,14 @@ public:
 	// 统计计数器 (由 RdmaHw 在运行时更新)
 	uint32_t m_periodCnp;       // 周期内收到的CNP数
 	uint64_t m_periodBytes;     // 周期内发送的字节数
+	uint32_t m_periodPkts;      // 周期内发送的包数
 	double m_periodRttSum;      // 周期内RTT总和 (用于求平均)
 	uint32_t m_periodRttCount;  // 周期内RTT采样次数
+	EventId m_rlSampleEvent;    // 周期采样事件
 	
 	// 重置统计量 (每个MI结束时调用)
 	void ResetRlStats();
+	void CancelRlSampling();
 	
 	// 覆盖 Object 的资源释放方法
 	virtual void DoDispose(void); 

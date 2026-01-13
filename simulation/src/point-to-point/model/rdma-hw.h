@@ -123,10 +123,17 @@ public:
 	uint32_t m_miThresh;
 	bool m_multipleRate;
 	bool m_sampleFeedback; // only react to feedback every RTT, or qlen > 0
+	bool m_rlEnabled;
+	bool m_rlMonitorOnly; // 仅监控 MI，不等待/应用外部动作
+	uint64_t m_moniterIntervalNs;
 	void HandleAckHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
 	void UpdateRateHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
 	void UpdateRateHpTest(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch, bool fast_react);
 	void FastReactHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch);
+
+	// RL 采样与共享内存写入
+	void ScheduleRlSample(Ptr<RdmaQueuePair> qp, bool apply_offset);
+	void RlSampleOnce(Ptr<RdmaQueuePair> qp);
 
 	/**********************
 	 * TIMELY

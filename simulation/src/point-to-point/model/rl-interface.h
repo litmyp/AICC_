@@ -3,42 +3,56 @@
 #define RL_INTERFACE_H
 
 #include <stdint.h>
-#include <vector>
+#include <array>
 #include "ns3/ptr.h"
 #include "ns3/object.h"
-//#include "ns3/rdma-queue-pair.h"
 
 namespace ns3 {
 
 class RdmaQueuePair;
 
-// 定义最大支持的流数量，防止内存溢出
-#define MAX_RL_FLOWS 1024
-#define SHM_NAME "/ns3_rl_shm"
+// 共享内存基本配置
+static constexpr uint16_t kRlMaxFlows = 64;
+static constexpr uint16_t kRlShmVersion = 2;
+static const char kRlShmName[] = "/ns3_rl_shm";
 
-// === 共享内存数据布局 ===
-// 这个结构体必须在 C++ 和 Python 中完全字节对齐
-struct ShmLayout {
-    // 同步标志位
-    volatile int32_t ns3_ready;      // 1: ns-3 数据已就绪，Python 可读
-    volatile int32_t py_ready;       // 1: Python 动作已写入，ns-3 可读
-    volatile int32_t sim_done;       // 1: 仿真结束
-    volatile int32_t num_active_flows; // 当前活跃流的数量
+// MI 状态槽
+struct __attribute__((packed)) RlSlot { // lty added: packed 避免共享内存对齐偏移
+    volatile uint32_t seq;       // 奇数=写入中，偶数=稳定
+    uint16_t qp_id;              // NodeId（发送端 ID）
+    uint16_t padding;            // 对齐占位
+    uint64_t interval_len_ns;    // MI 长度，默认 100000ns
+    uint32_t cnp_count;          // 当前 MI 内 CNP=1 数量
+    uint32_t tx_pkts;            // 当前 MI 内发送的包数
+    uint64_t tx_bytes;           // 当前 MI 内发送的字节数
+    uint64_t rtt_mean_ns;        // RTT 均值
+    uint64_t tx_rate_bps;        // 当前速率 (bit/s)
+    uint64_t timestamp_ns;       // 写入时间戳
+    volatile uint32_t result_seq; // lty added: 外部结果的完成序号，达到当前seq后仿真可继续
+    int64_t result_value;        // lty added: 外部返回的结果值（如动作/速率），默认0
+};
 
-    // 状态数据区 (State) - 发送给 Python
-    struct {
-        int32_t is_active;           // 1: 该槽位有效, 0: 空闲
-        uint32_t flow_id;            // 用于调试
-        double cur_rate;             // 当前速率 (bps)
-        double cnp_rate;             // CNP 数量 / 包数量 (周期内)
-        double avg_rtt;              // 平均 RTT (ns)
-        double throughput;           // 吞吐量 (bytes / period)
-    } states[MAX_RL_FLOWS];
+struct RlShmHeader {
+    uint16_t version;
+    uint16_t slot_count;
+    uint32_t slot_size;
+};
 
-    // 动作指令区 (Action) - 从 Python 接收
-    struct {
-        double target_rate;          // 目标速率 (bps)
-    } actions[MAX_RL_FLOWS];
+struct RlShmLayout {
+    RlShmHeader header;
+    RlSlot slots[kRlMaxFlows];
+};
+
+struct RlSample {
+    uint16_t qp_id;
+    uint16_t padding; // 对齐占位
+    uint64_t interval_len_ns;
+    uint32_t cnp_count;
+    uint32_t tx_pkts;
+    uint64_t tx_bytes;
+    uint64_t rtt_mean_ns;
+    uint64_t tx_rate_bps;
+    uint64_t timestamp_ns;
 };
 
 class RLInterface {
@@ -58,16 +72,27 @@ public:
     // 注销 QP，释放槽位
     void UnregisterQp(int slot_index);
 
-    // [核心] 这里的逻辑稍后实现，现在先留空
-    // 负责把所有注册 QP 的数据写入 Shm，并等待 Python
-    void Step();
+    // 写入一条采样数据
+    // 返回最终稳定的 seq（偶数），失败返回 0
+    uint32_t PublishSample(int slot_index, const RlSample& sample);
+
+    // lty added: 等待指定slot的外部结果写回，阻塞直到 result_seq >= target_seq
+    bool WaitForResult(int slot_index, uint32_t target_seq, uint64_t timeout_us = 0);
+
+    // lty added: 读取外部写回的结果值（不阻塞），按 double 解释
+    bool GetResultValue(int slot_index, double& out_value);
+
+    // lty added: 处理完一次MI后清空槽位，避免数据滞留
+    void ClearSlot(int slot_index);
 
 private:
+    void EnsureInit();
+
     int m_shm_fd;
-    ShmLayout* m_shm_ptr;
+    RlShmLayout* m_shm_ptr;
     
     // 维护 slot_index -> QP 的映射，方便快速访问
-    Ptr<RdmaQueuePair> m_active_qps[MAX_RL_FLOWS];
+    std::array<Ptr<RdmaQueuePair>, kRlMaxFlows> m_active_qps;
 };
 
 } // namespace ns3

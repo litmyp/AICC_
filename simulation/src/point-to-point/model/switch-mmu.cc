@@ -63,16 +63,16 @@ namespace ns3 {
 	void SwitchMmu::UpdateEgressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize){
 		egress_bytes[port][qIndex] += psize;
 	// lty: monitor queue length vs ECN thresholds
-	uint32_t qlen = egress_bytes[port][qIndex];
-	if (qlen >= kmin[port]) {
-		std::cout << Simulator::Now().GetTimeStep()
-		          << " SwitchMmu port=" << port
-		          << " q=" << qIndex
-		          << " egress_bytes=" << qlen
-		          << " kmin=" << kmin[port]
-		          << " kmax=" << kmax[port]
-		          << std::endl;
-	}
+	// uint32_t qlen = egress_bytes[port][qIndex];
+	// if (qlen >= kmin[port]) {
+	// 	std::cout << Simulator::Now().GetTimeStep()
+	// 	          << " SwitchMmu port=" << port
+	// 	          << " q=" << qIndex
+	// 	          << " egress_bytes=" << qlen
+	// 	          << " kmin=" << kmin[port]
+	// 	          << " kmax=" << kmax[port]
+	// 	          << std::endl;
+	// }
 	}
 	void SwitchMmu::RemoveFromIngressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize){
 		uint32_t from_hdrm = std::min(hdrm_bytes[port][qIndex], psize);
@@ -84,16 +84,16 @@ namespace ns3 {
 	void SwitchMmu::RemoveFromEgressAdmission(uint32_t port, uint32_t qIndex, uint32_t psize){
 		egress_bytes[port][qIndex] -= psize;
 	// lty: monitor queue drain vs thresholds
-	uint32_t qlen = egress_bytes[port][qIndex];
-	if (qlen >= kmin[port]) {
-		std::cout << Simulator::Now().GetTimeStep()
-		          << " SwitchMmu drain port=" << port
-		          << " q=" << qIndex
-		          << " egress_bytes=" << qlen
-		          << " kmin=" << kmin[port]
-		          << " kmax=" << kmax[port]
-		          << std::endl;
-	}
+	// uint32_t qlen = egress_bytes[port][qIndex];
+	// if (qlen >= kmin[port]) {
+	// 	std::cout << Simulator::Now().GetTimeStep()
+	// 	          << " SwitchMmu drain port=" << port
+	// 	          << " q=" << qIndex
+	// 	          << " egress_bytes=" << qlen
+	// 	          << " kmin=" << kmin[port]
+	// 	          << " kmax=" << kmax[port]
+	// 	          << std::endl;
+	// }
 	}
 	bool SwitchMmu::CheckShouldPause(uint32_t port, uint32_t qIndex){
 		return !paused[port][qIndex] && (hdrm_bytes[port][qIndex] > 0 || GetSharedUsed(port, qIndex) >= GetPfcThreshold(port));

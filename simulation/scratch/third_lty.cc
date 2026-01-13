@@ -43,7 +43,6 @@ using namespace std;
 NS_LOG_COMPONENT_DEFINE("GENERIC_SIMULATION");
 
 uint32_t cc_mode = 1;
-uint32_t cc_mode_node2 = 1; // 节点2可单独指定的拥塞控制模式
 bool enable_qcn = true, use_dynamic_pfc_threshold = true;
 uint32_t packet_payload_size = 1000, l2_chunk_size = 0, l2_ack_interval = 0;
 double pause_time = 5, simulator_stop_time = 3.01;
@@ -70,6 +69,8 @@ double pint_prob = 1.0;
 double u_target = 0.95;
 uint32_t int_multi = 1;
 bool rate_bound = true;
+uint32_t rl_enabled = 1; //强化学习开关
+uint32_t rl_monitor_only = 0; //1，仅监控 MI，启发式控制生效   (cc_mode=7, rl_enabled=1, rl_monitor_only=0时，强化学习控制才被打开)
 
 uint32_t ack_high_prio = 0;
 uint64_t link_down_time = 0;
@@ -646,6 +647,12 @@ int main(int argc, char *argv[])
 				conf >> v;
 				sample_feedback = v;
 				std::cout << "SAMPLE_FEEDBACK\t\t\t\t" << sample_feedback << '\n';
+			}else if (key.compare("RL_ENABLED") == 0){
+				conf >> rl_enabled;
+				std::cout << "RL_ENABLED\t\t\t\t" << rl_enabled << '\n';
+			}else if (key.compare("RL_MONITOR_ONLY") == 0){
+				conf >> rl_monitor_only;
+				std::cout << "RL_MONITOR_ONLY\t\t\t" << rl_monitor_only << '\n';
 			}else if(key.compare("PINT_LOG_BASE") == 0){
 				conf >> pint_log_base;
 				std::cout << "PINT_LOG_BASE\t\t\t\t" << pint_log_base << '\n';
@@ -664,8 +671,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	// 默认让节点2的 cc_mode 与全局一致，便于后面单独覆盖
-	// cc_mode_node2 = cc_mode;
 
 
 	bool dynamicth = use_dynamic_pfc_threshold;
@@ -843,13 +848,13 @@ int main(int argc, char *argv[])
 				NS_ASSERT_MSG(rate2pmax.find(rate) != rate2pmax.end(), "must set pmax for each link speed");
 				sw->m_mmu->ConfigEcn(j, rate2kmin[rate], rate2kmax[rate], rate2pmax[rate]);
 				/////////=======lty added: print ECN config on switch nodes============
-				std::cout << "switch node " << sw->GetId()
-				          << " dev " << j
-				          << " ECN kmin=" << rate2kmin[rate] << "B"
-				          << " kmax=" << rate2kmax[rate] << "B"
-				          << " pmax=" << rate2pmax[rate]
-				          << " rate=" << rate/1e9 << "Gbps"
-				          << std::endl;
+				// std::cout << "switch node " << sw->GetId()
+				//           << " dev " << j
+				//           << " ECN kmin=" << rate2kmin[rate] << "B"
+				//           << " kmax=" << rate2kmax[rate] << "B"
+				//           << " pmax=" << rate2pmax[rate]
+				//           << " rate=" << rate/1e9 << "Gbps"
+				//           << std::endl;
 				///////////end==========
 				// set pfc
 				uint64_t delay = DynamicCast<QbbChannel>(dev->GetChannel())->GetDelay().GetTimeStep();
@@ -871,7 +876,6 @@ int main(int argc, char *argv[])
 
 		#if ENABLE_QP
 		FILE *fct_output = fopen(fct_output_file.c_str(), "w");
-		Ptr<RdmaHw> node2RdmaHw = nullptr; // 保存节点2的 RdmaHw，便于循环后单独设置 cc_mode
 		//
 		// install RDMA driver
 		//
@@ -889,11 +893,7 @@ int main(int argc, char *argv[])
 				rdmaHw->SetAttribute("L2BackToZero", BooleanValue(l2_back_to_zero));
 				rdmaHw->SetAttribute("L2ChunkSize", UintegerValue(l2_chunk_size));
 				rdmaHw->SetAttribute("L2AckInterval", UintegerValue(l2_ack_interval));
-				if (n.Get(i)->GetId() != 2){
-					rdmaHw->SetAttribute("CcMode", UintegerValue(cc_mode));
-				}else{
-					node2RdmaHw = rdmaHw; // 循环结束后单独指定节点2的 cc_mode
-				}
+				rdmaHw->SetAttribute("CcMode", UintegerValue(cc_mode));
 				rdmaHw->SetAttribute("RateDecreaseInterval", DoubleValue(rate_decrease_interval));
 				rdmaHw->SetAttribute("MinRate", DataRateValue(DataRate(min_rate)));
 				rdmaHw->SetAttribute("Mtu", UintegerValue(packet_payload_size));
@@ -905,6 +905,8 @@ int main(int argc, char *argv[])
 				rdmaHw->SetAttribute("TargetUtil", DoubleValue(u_target));
 				rdmaHw->SetAttribute("RateBound", BooleanValue(rate_bound));
 				rdmaHw->SetAttribute("DctcpRateAI", DataRateValue(DataRate(dctcp_rate_ai)));
+				rdmaHw->SetAttribute("RlEnabled", BooleanValue(rl_enabled));
+				rdmaHw->SetAttribute("RlMonitorOnly", BooleanValue(rl_monitor_only));
 				rdmaHw->SetPintSmplThresh(pint_prob);
 				// create and install RdmaDriver
 				Ptr<RdmaDriver> rdma = CreateObject<RdmaDriver>();
@@ -916,11 +918,6 @@ int main(int argc, char *argv[])
 				rdma->Init();
 				rdma->TraceConnectWithoutContext("QpComplete", MakeBoundCallback (qp_finish, fct_output));
 			}
-		}
-
-		// 循环外单独为节点2设置 cc_mode
-		if (node2RdmaHw){
-			node2RdmaHw->SetAttribute("CcMode", UintegerValue(cc_mode_node2));
 		}
 
 	// lty added: print QcnEnabled status on switch nodes============

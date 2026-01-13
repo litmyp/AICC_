@@ -1,0 +1,8 @@
+等待共享内存数据以确定训练的第一个 qp ...
+检测到 qp_id=2，启用纯推理模式（AICC_INFER_ONLY=1）
+检测到已有模型，尝试从 /MI_AICC/AICC/models/ddpg_adpg.zip 加载
+Wrapping the env with a `Monitor` wrapper
+Wrapping the env in a DummyVecEnv.
+已加载 replay buffer：/MI_AICC/AICC/models/ddpg_adpg_replay_buffer.pkl
+已加载保存的模型，继续推理/训练
+初始化完成，进入纯推理（不训练/不保存）

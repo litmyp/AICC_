@@ -9,9 +9,11 @@
 #include "ns3/data-rate.h"
 #include "ns3/pointer.h"
 #include "rdma-hw.h"
+#include "rl-interface.h"
 #include "ppp-header.h"
 #include "qbb-header.h"
 #include "cn-header.h"
+#include <iostream>
 
 namespace ns3{
 
@@ -139,6 +141,21 @@ TypeId RdmaHw::GetTypeId (void)
 				BooleanValue(false),
 				MakeBooleanAccessor(&RdmaHw::m_sampleFeedback),
 				MakeBooleanChecker())
+		.AddAttribute("RlEnabled",
+				"Enable RL sampling to shared memory",
+				BooleanValue(true),
+				MakeBooleanAccessor(&RdmaHw::m_rlEnabled),
+				MakeBooleanChecker())
+		.AddAttribute("RlMonitorOnly",
+				"Enable RL sampling but skip waiting/applying external actions",
+				BooleanValue(false),
+				MakeBooleanAccessor(&RdmaHw::m_rlMonitorOnly),
+				MakeBooleanChecker())
+		.AddAttribute("MoniterInterval",
+				"Sampling interval (nanoseconds) for RL raw features",
+				UintegerValue(50000),
+				MakeUintegerAccessor(&RdmaHw::m_moniterIntervalNs),
+				MakeUintegerChecker<uint64_t>())
 		.AddAttribute("TimelyAlpha",
 				"Alpha of TIMELY",
 				DoubleValue(0.875),
@@ -179,6 +196,9 @@ TypeId RdmaHw::GetTypeId (void)
 }
 
 RdmaHw::RdmaHw(){
+	m_rlEnabled = true;
+	m_rlMonitorOnly = false;
+	m_moniterIntervalNs = 50000;
 }
 
 void RdmaHw::SetNode(Ptr<Node> node){
@@ -255,6 +275,12 @@ void RdmaHw::AddQueuePair(uint64_t size, uint16_t pg, Ipv4Address sip, Ipv4Addre
 
 	// Notify Nic
 	m_nic[nic_idx].dev->NewQp(qp);
+
+    // RL sampling
+    if (m_rlEnabled && m_moniterIntervalNs > 0) {
+        // lty added: 首次调度引入错峰偏移，避免所有流同一时刻采样
+        ScheduleRlSample(qp, true);
+    }
 }
 
 void RdmaHw::DeleteQueuePair(Ptr<RdmaQueuePair> qp){
@@ -365,6 +391,9 @@ int RdmaHw::ReceiveCnp(Ptr<Packet> p, CustomHeader &ch){
 	// get nic
 	uint32_t nic_idx = GetNicIdxOfQp(qp);
 	Ptr<QbbNetDevice> dev = m_nic[nic_idx].dev;
+	if (qp != NULL){
+		qp->m_periodCnp++;
+	}
 
 	if (qp->m_rate == 0)			//lazy initialization	
 	{
@@ -415,9 +444,18 @@ int RdmaHw::ReceiveAck(Ptr<Packet> p, CustomHeader &ch){
 	}
 	if (ch.l3Prot == 0xFD) // NACK
 		RecoverQueue(qp);
+	// record RTT sample for this ACK/NACK (only when INT TS mode enabled)
+	if (IntHeader::mode == IntHeader::TS && ch.ack.ih.ts > 0) {
+		uint64_t rtt = Simulator::Now().GetTimeStep() - ch.ack.ih.ts;
+		std::cout<<"1.当前时间戳等于"<<Simulator::Now().GetTimeStep()<<"ACK中记录的数据包发出时间戳等于"<<ch.ack.ih.ts<<"计算得到的rtt大小等于"<<rtt<<std::endl;// lty added 用于调试rtt计算过程
+		qp->m_periodRttSum += rtt;
+		qp->m_periodRttCount++;
+		std::cout<<"2.当前累积rtt加和等于"<<qp->m_periodRttSum<<"当前累积rtt数量等于"<<qp->m_periodRttCount<<std::endl;// lty added 用于调试rtt计算过程
+	}
 
 	// handle cnp
 	if (cnp){
+		qp->m_periodCnp++;
 		if (m_cc_mode == 1){ // mlx version
 			cnp_received_mlx(qp);
 		} 
@@ -504,6 +542,14 @@ void RdmaHw::QpComplete(Ptr<RdmaQueuePair> qp){
 		Simulator::Cancel(qp->mlx.m_rpTimer);
 	}
 
+    // 停止 RL 采样并释放共享内存槽位，避免流结束后仍继续写共享内存
+    qp->CancelRlSampling();
+    if (qp->m_rlSlotIndex >= 0) {
+        RLInterface::Get()->ClearSlot(qp->m_rlSlotIndex);
+        RLInterface::Get()->UnregisterQp(qp->m_rlSlotIndex);
+        qp->m_rlSlotIndex = -1;
+    }
+
 	// This callback will log info
 	// It may also delete the rxQp on the receiver
 	m_qpCompleteCallback(qp);
@@ -585,6 +631,8 @@ Ptr<Packet> RdmaHw::GetNxtPacket(Ptr<RdmaQueuePair> qp){
 
 void RdmaHw::PktSent(Ptr<RdmaQueuePair> qp, Ptr<Packet> pkt, Time interframeGap){
 	qp->lastPktSize = pkt->GetSize();
+	qp->m_periodBytes += pkt->GetSize();
+	qp->m_periodPkts += 1;
 	UpdateNextAvail(qp, interframeGap, pkt->GetSize());
 }
 
@@ -918,9 +966,112 @@ void RdmaHw::FastReactHp(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch)
 }
 
 /**********************
+ * RL Sampling
+ *********************/
+void RdmaHw::ScheduleRlSample(Ptr<RdmaQueuePair> qp, bool apply_offset){
+    if (!m_rlEnabled || m_moniterIntervalNs == 0 || qp == NULL) {
+        return;
+    }
+    uint64_t delay_ns = m_moniterIntervalNs;
+    if (apply_offset && qp->m_rlSlotIndex >= 0) {
+        // lty added: 根据slot错峰首个MI，确保同样间隔但起点分散
+        uint64_t base_offset = m_moniterIntervalNs / kRlMaxFlows;
+        uint64_t offset_ns = base_offset * static_cast<uint64_t>(qp->m_rlSlotIndex % kRlMaxFlows);
+        if (m_moniterIntervalNs > 0) {
+            offset_ns %= m_moniterIntervalNs;
+        }
+        if (offset_ns > 0) {
+            delay_ns = offset_ns;
+        } else if (qp->m_rlSlotIndex > 0) {
+            // 避免多个流同时开始，给非0 slot 一个极小的偏移
+            delay_ns = base_offset == 0 ? 1 : base_offset;
+        }
+    }
+    qp->m_rlSampleEvent = Simulator::Schedule(NanoSeconds(delay_ns), &RdmaHw::RlSampleOnce, this, qp);
+}
+
+void RdmaHw::RlSampleOnce(Ptr<RdmaQueuePair> qp){
+    if (!m_rlEnabled || qp == NULL) {
+        return;
+	}
+    if (qp->IsFinished()) {
+        // 流已结束，停止进一步采样并释放槽位
+        qp->CancelRlSampling();
+        if (qp->m_rlSlotIndex >= 0) {
+            RLInterface::Get()->ClearSlot(qp->m_rlSlotIndex);
+            RLInterface::Get()->UnregisterQp(qp->m_rlSlotIndex);
+            qp->m_rlSlotIndex = -1;
+        }
+        return;
+    }
+	if (qp->m_rlSlotIndex < 0) {
+		// 未注册共享内存槽位，跳过
+		ScheduleRlSample(qp, true);
+		return;
+	}
+	RlSample sample{};
+    sample.qp_id = m_node ? static_cast<uint16_t>(m_node->GetId()) : 0;
+    sample.padding = 0;
+    sample.interval_len_ns = m_moniterIntervalNs;
+    sample.cnp_count = qp->m_periodCnp;
+    sample.tx_pkts = qp->m_periodPkts;
+    sample.tx_bytes = qp->m_periodBytes;
+    sample.rtt_mean_ns = qp->m_periodRttCount ? static_cast<uint64_t>(qp->m_periodRttSum / qp->m_periodRttCount) : 0;
+    sample.tx_rate_bps = qp->m_rate.GetBitRate();
+    sample.timestamp_ns = Simulator::Now().GetNanoSeconds();
+
+    uint32_t slot_seq = RLInterface::Get()->PublishSample(qp->m_rlSlotIndex, sample);
+
+    std::cout << "[RL Sample] qp_id=" << sample.qp_id
+              << " slot=" << qp->m_rlSlotIndex
+              << " slot_seq=" << slot_seq
+              << " mi_ns=" << sample.interval_len_ns
+              << " cnp=" << sample.cnp_count
+              << " pkts=" << sample.tx_pkts
+              << " bytes=" << sample.tx_bytes
+              << " rtt_ns=" << sample.rtt_mean_ns
+              << " rate_bps=" << sample.tx_rate_bps
+              << " ts_ns=" << sample.timestamp_ns
+              << std::endl;
+
+    // 仅监控模式：写入后立即继续仿真，不等待外部动作
+    if (m_rlMonitorOnly) {
+        RLInterface::Get()->ClearSlot(qp->m_rlSlotIndex);
+        qp->ResetRlStats();
+        ScheduleRlSample(qp, false);
+        return;
+    }
+
+    // lty added: 写入后阻塞等待外部结果，仿真暂停直到 result_seq 达标
+    RLInterface::Get()->WaitForResult(qp->m_rlSlotIndex, slot_seq);
+
+    // lty added: 读取外部写回的结果值作为速率更新系数
+    double factor = 0.0;
+    if (RLInterface::Get()->GetResultValue(qp->m_rlSlotIndex, factor)) {
+        std::cout << "收到来自python的更新：" << factor << std::endl;
+        if (factor > 0) {
+            double new_bps = qp->m_rate.GetBitRate() * factor;
+            if (new_bps < m_minRate.GetBitRate())
+                new_bps = m_minRate.GetBitRate();
+            if (new_bps > qp->m_max_rate.GetBitRate())
+                new_bps = qp->m_max_rate.GetBitRate();
+            ChangeRate(qp, DataRate(static_cast<uint64_t>(new_bps)));
+        }
+    }
+    // lty added: 清空当前槽位，避免重复读取旧数据
+    RLInterface::Get()->ClearSlot(qp->m_rlSlotIndex);
+
+    qp->ResetRlStats();
+    ScheduleRlSample(qp, false);
+}
+
+/**********************
  * TIMELY
  *********************/
 void RdmaHw::HandleAckTimely(Ptr<RdmaQueuePair> qp, Ptr<Packet> p, CustomHeader &ch){
+	if (m_cc_mode == 7 && m_rlEnabled && !m_rlMonitorOnly){ // lty added: RL 接管时跳过 TIMELY 内部更新
+		return;
+	}
 	uint32_t ack_seq = ch.ack.seq;
 	// update rate
 	if (ack_seq > qp->tmly.m_lastUpdateSeq){ // if full RTT feedback is ready, do full update

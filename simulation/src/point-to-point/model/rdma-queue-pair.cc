@@ -244,12 +244,20 @@ void RdmaQueuePairGroup::Clear(void){
 void RdmaQueuePair::ResetRlStats() {
     m_periodCnp = 0;
     m_periodBytes = 0;
+    m_periodPkts = 0;
     m_periodRttSum = 0;
     m_periodRttCount = 0;
 }
 
+void RdmaQueuePair::CancelRlSampling() {
+    if (m_rlSampleEvent.IsRunning()) {
+        Simulator::Cancel(m_rlSampleEvent);
+    }
+}
+
 void RdmaQueuePair::DoDispose(void) {
     // 析构前自动注销
+    CancelRlSampling();
     if (m_rlSlotIndex != -1) {
         RLInterface::Get()->UnregisterQp(m_rlSlotIndex);
         m_rlSlotIndex = -1;

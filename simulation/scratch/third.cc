@@ -69,6 +69,7 @@ double pint_prob = 1.0;
 double u_target = 0.95;
 uint32_t int_multi = 1;
 bool rate_bound = true;
+uint32_t rl_enabled = 1;
 
 uint32_t ack_high_prio = 0;
 uint64_t link_down_time = 0;
@@ -644,6 +645,9 @@ int main(int argc, char *argv[])
 				conf >> v;
 				sample_feedback = v;
 				std::cout << "SAMPLE_FEEDBACK\t\t\t\t" << sample_feedback << '\n';
+			}else if (key.compare("RL_ENABLED") == 0){
+				conf >> rl_enabled;
+				std::cout << "RL_ENABLED\t\t\t\t" << rl_enabled << '\n';
 			}else if(key.compare("PINT_LOG_BASE") == 0){
 				conf >> pint_log_base;
 				std::cout << "PINT_LOG_BASE\t\t\t\t" << pint_log_base << '\n';
@@ -880,6 +884,7 @@ int main(int argc, char *argv[])
 			rdmaHw->SetAttribute("TargetUtil", DoubleValue(u_target));
 			rdmaHw->SetAttribute("RateBound", BooleanValue(rate_bound));
 			rdmaHw->SetAttribute("DctcpRateAI", DataRateValue(DataRate(dctcp_rate_ai)));
+			rdmaHw->SetAttribute("RlEnabled", BooleanValue(rl_enabled));
 			rdmaHw->SetPintSmplThresh(pint_prob);
 			// create and install RdmaDriver
 			Ptr<RdmaDriver> rdma = CreateObject<RdmaDriver>();

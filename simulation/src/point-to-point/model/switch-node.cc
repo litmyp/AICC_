@@ -201,13 +201,13 @@ void SwitchNode::SwitchNotifyDequeue(uint32_t ifIndex, uint32_t qIndex, Ptr<Pack
 	if (qIndex != 0){
 		uint32_t inDev = t.GetFlowId();
 		// lty added: 记录 Remove 操作前的队列长度及阈值
-		uint32_t egressBefore = m_mmu->egress_bytes[ifIndex][qIndex];
-            std::cout << "lty added: switch=" << GetId() << " inDev=" << inDev
-                    << " ifIndex=" << ifIndex << " qIndex=" << qIndex
-                    << " egress_before=" << egressBefore
-                    << " kmin=" << m_mmu->kmin[ifIndex]
-                    << " kmax=" << m_mmu->kmax[ifIndex]
-                    << " ts=" << Simulator::Now().GetTimeStep() << std::endl;
+		// uint32_t egressBefore = m_mmu->egress_bytes[ifIndex][qIndex];
+        //     std::cout << "lty added: switch=" << GetId() << " inDev=" << inDev
+        //             << " ifIndex=" << ifIndex << " qIndex=" << qIndex
+        //             << " egress_before=" << egressBefore
+        //             << " kmin=" << m_mmu->kmin[ifIndex]
+        //             << " kmax=" << m_mmu->kmax[ifIndex]
+        //             << " ts=" << Simulator::Now().GetTimeStep() << std::endl;
 		m_mmu->RemoveFromIngressAdmission(inDev, qIndex, p->GetSize());
 		m_mmu->RemoveFromEgressAdmission(ifIndex, qIndex, p->GetSize());
 		// lty added: 记录 Remove 后的队列长度
